@@ -1,5 +1,3 @@
-import urllib3
-import json
 import requests
 from pprint import pprint
 from collections import defaultdict
@@ -70,13 +68,10 @@ class SpotifyClient:
     def get_saved_tracks(self):
         endpoint = 'tracks'
         spotify_data = self._get_api_data(endpoint)
-        # pprint(spotify_data)
         top_tracks = defaultdict(list)
         for track_object in spotify_data['items']:
-            #pprint(track_object)
             artist = track_object['track']['album']['artists'][0]['name']
             track = track_object['track']['name']
-            #top_tracks[track_object['artists'][0]['name']].append(track_object['track']['name'])
             top_tracks[artist].append(track)
         print(len(top_tracks))
         pprint(top_tracks)
@@ -96,5 +91,6 @@ if __name__ == '__main__':
     # mySpotify.get_recently_played()
     # mySpotify.get_top_artists('short_term')
     # mySpotify.get_top_tracks('short_term')
-    #mySpotify.get_available_genre_seeds()
+    # mySpotify.get_available_genre_seeds()
     mySpotify.get_saved_tracks()
+
