@@ -4,7 +4,7 @@ from collections import defaultdict
 
 class SpotifyClient:
     def __init__(self):
-        self.AUTH_TOKEN = 'BQCaA-I3qKSrX8S2sB19YbWZymVwMWkKwaDRjWvy0Fnn_aXW1LayG2zGlzGah0wxw1dATZMqU7S-xu2jnyux6fVoQY9mHhbg-Ie9u0A3GuABj1nLXcjJt9-wamc9Jg_Z9EuKQ3coXTczMmseQgX84iuYW3Ie'
+        self.AUTH_TOKEN = 'BQDwW4F8vZ-J03SL56hwaRL7MyJFiDLSITY8xuNZ3zWNx-Tv0vDs_BU6tOPxL6SOnkRxKrzKAmyCM1s76SOa8kEeFKd4kV-T75gzGY1MNz2FORx3_nTsgBlTKHBgA2RJSdqS_fh07Wa7k96q-sWAs55KIT5J9_exsV-iZ9rlOg'
         self.base_url = 'https://api.spotify.com/'
         self.user = '1259570943'
         self._params = {}
@@ -33,23 +33,36 @@ class SpotifyClient:
         pprint(recently_played)
         return recently_played
 
-    def get_top_artists(self, time_range='medium_term'):
+    def get_top_artists(self, time_range='medium_term', offset=0, limit=20):
+        """Retrieves your most played artists.
+            time_range: short_term, medium_term, long_term;
+            0<=offset<50: a shift down the list;
+            0<=limit<=50: number of results to retrieve"""
         endpoint = f"top/artists"
         self.params['time_range'] = time_range
+        self.params['limit'] = limit
+        self.params['offset'] = offset
         spotify_data = self._get_api_data(endpoint)
         fave_artists = [artist_object['name'] for artist_object in spotify_data['items']]
         pprint(fave_artists)
         return fave_artists
 
-    def get_top_tracks(self, time_range='medium_term'):
+    def get_top_tracks(self, time_range='medium_term', offset=0, limit=20):
+        """Retrieves your most played tracks.
+                time_range: short_term, medium_term, long_term;
+                0<=offset<50: a shift down the list;
+                0<=limit<=50: number of results to retrieve"""
         endpoint = f"top/tracks"
         self.params['time_range'] = time_range
+        self.params['limit'] = limit
+        self.params['offset'] = offset
         spotify_data = self._get_api_data(endpoint)
-        top_tracks = defaultdict(list)
-        for track_object in spotify_data['items']:
-            top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
-        pprint(top_tracks)
-        return top_tracks
+        # top_tracks = defaultdict(list)
+        # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
+        top_track_list = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
+                          for track_object in spotify_data['items']]
+        pprint(top_track_list)
+        return top_track_list
 
     def get_current_playback(self):
         endpoint ="player/"
@@ -81,16 +94,16 @@ class SpotifyClient:
         pass
 
 if __name__ == '__main__':
-    # idea: use cosine similarity on artist genres to find similar artsists
-        # Make playlist based on two or more peoples common genre interests
-        # Make playlist of a genre from music in library
-
     mySpotify = SpotifyClient()
 
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
-    # mySpotify.get_top_artists('short_term')
-    # mySpotify.get_top_tracks('short_term')
+    # mySpotify.get_top_artists('medium_term')
+    mySpotify.get_top_tracks('short_term')
     # mySpotify.get_available_genre_seeds()
-    mySpotify.get_saved_tracks()
+    # mySpotify.get_saved_tracks()
 
+
+    # idea: use cosine similarity on artist genres to find similar artsists
+        # Make playlist based on two or more peoples common genre interests
+        # Make playlist of a genre from music in library
