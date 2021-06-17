@@ -4,7 +4,7 @@ from collections import defaultdict
 
 class SpotifyClient:
     def __init__(self):
-        self.AUTH_TOKEN = 'BQDwW4F8vZ-J03SL56hwaRL7MyJFiDLSITY8xuNZ3zWNx-Tv0vDs_BU6tOPxL6SOnkRxKrzKAmyCM1s76SOa8kEeFKd4kV-T75gzGY1MNz2FORx3_nTsgBlTKHBgA2RJSdqS_fh07Wa7k96q-sWAs55KIT5J9_exsV-iZ9rlOg'
+        self.AUTH_TOKEN = 'BQCYS9ZZlHYVpsSwy4gpQHudiMV6xfyFE_e9drIOLYMfudTjt7Zx8SSGiVZvHhAntuL5GKxoHUqKDeurjmNSiYBm15EqAISuM1Vz_-Aq5nGaO-57VstY9nwtn2F4Ge4v6c9m2SDgcIU0KDL695ndlWNHZfgi8YG-z7VzQ5wwB6P3N2OdIn29'
         self.base_url = 'https://api.spotify.com/'
         self.user = '1259570943'
         self._params = {}
@@ -19,7 +19,7 @@ class SpotifyClient:
         self._params = value
 
     def _get_api_data(self, endpoint):
-        response = requests.get(f"https://api.spotify.com/v1/me/{endpoint}",
+        response = requests.get(f"https://api.spotify.com/v1/{endpoint}",
                                 headers=self.headers,
                                 params=self._params)
         return response.json()
@@ -38,7 +38,7 @@ class SpotifyClient:
             time_range: short_term, medium_term, long_term;
             0<=offset<50: a shift down the list;
             0<=limit<=50: number of results to retrieve"""
-        endpoint = f"top/artists"
+        endpoint = f"me/top/artists"
         self.params['time_range'] = time_range
         self.params['limit'] = limit
         self.params['offset'] = offset
@@ -52,7 +52,7 @@ class SpotifyClient:
                 time_range: short_term, medium_term, long_term;
                 0<=offset<50: a shift down the list;
                 0<=limit<=50: number of results to retrieve"""
-        endpoint = f"top/tracks"
+        endpoint = f"me/top/tracks"
         self.params['time_range'] = time_range
         self.params['limit'] = limit
         self.params['offset'] = offset
@@ -65,21 +65,22 @@ class SpotifyClient:
         return top_track_list
 
     def get_current_playback(self):
-        endpoint ="player/"
+        endpoint ="me/player/"
         spotify_data = self._get_api_data(endpoint)
         current_track = spotify_data['item']['name']
         current_artist = spotify_data['item']['artists'][0]['name']
         print(f"Currently playing:  {current_track} by {current_artist}")
+        pprint(spotify_data)
         return spotify_data
 
     def get_available_genre_seeds(self):
-        endpoint = 'recommendations/available-genre-seeds'
+        endpoint = 'me/recommendations/available-genre-seeds'
         spotify_data = self._get_api_data(endpoint)
         pprint(spotify_data)
         return
 
     def get_saved_tracks(self):
-        endpoint = 'tracks'
+        endpoint = 'me/tracks'
         spotify_data = self._get_api_data(endpoint)
         top_tracks = defaultdict(list)
         for track_object in spotify_data['items']:
@@ -90,8 +91,15 @@ class SpotifyClient:
         pprint(top_tracks)
         return top_tracks
 
-    def get_audio_features(self):
-        pass
+    def get_audio_features_of_currently_playing_track(self):
+        """Requires OAuth token with scope user-read-currently-playing"""
+        current_data = self.get_current_playback()
+        self.params['ids'] = current_data['item']['id']  # '54TbgZjTIl5ACMgBblalDk', '7EPTw7FcIoe6r6TI5VGoVx'
+        endpoint = "audio-features"
+        spotify_data = self._get_api_data(endpoint)
+        pprint(spotify_data)
+        return spotify_data
+
 
 if __name__ == '__main__':
     mySpotify = SpotifyClient()
@@ -99,10 +107,10 @@ if __name__ == '__main__':
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
     # mySpotify.get_top_artists('medium_term')
-    mySpotify.get_top_tracks('short_term')
+    #mySpotify.get_top_tracks('short_term')
     # mySpotify.get_available_genre_seeds()
     # mySpotify.get_saved_tracks()
-
+    mySpotify.get_audio_features_of_currently_playing_track()
 
     # idea: use cosine similarity on artist genres to find similar artsists
         # Make playlist based on two or more peoples common genre interests
