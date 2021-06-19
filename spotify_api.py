@@ -57,37 +57,28 @@ class SpotifyClient:
         pprint(recently_played)
         return recently_played
 
-    def get_top_artists(self, time_range='medium_term', offset=0, limit=20):
-        """Retrieves your most played artists.
+
+    def get_top(self, type, time_range='medium_term', offset=0, limit=20):
+        """Retrieves your most played.
+            type: artists, tracks
             time_range: short_term, medium_term, long_term;
             0<=offset<50: a shift down the list;
             0<=limit<=50: number of results to retrieve"""
-        endpoint = f"me/top/artists"
+        endpoint = f"me/top/{type}"
         self.params['time_range'] = time_range
         self.params['limit'] = limit
         self.params['offset'] = offset
         spotify_data = self._get_api_data(endpoint)
         check_api_response(spotify_data)
-        fave_artists = [artist_object['name'] for artist_object in spotify_data['items']]
-        pprint(fave_artists)
-        return fave_artists
-
-    def get_top_tracks(self, time_range='medium_term', offset=0, limit=20):
-        """Retrieves your most played tracks.
-                time_range: short_term, medium_term, long_term;
-                0<=offset<50: a shift down the list;
-                0<=limit<=50: number of results to retrieve"""
-        endpoint = f"me/top/tracks"
-        self.params['time_range'] = time_range
-        self.params['limit'] = limit
-        self.params['offset'] = offset
-        spotify_data = self._get_api_data(endpoint)
-        check_api_response(spotify_data)
-        # top_tracks = defaultdict(list)
-        # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
-        top_track_list = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
-                          for track_object in spotify_data['items']]
-        # pprint(top_track_list)
+        if type == 'artists':
+            top_data = [artist_object['name'] for artist_object in spotify_data['items']]
+            pprint(top_data)
+        else: # 'tracks'
+            # top_tracks = defaultdict(list)
+            # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
+            top_data = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
+                              for track_object in spotify_data['items']]
+            # pprint(top_data)
         return spotify_data
 
     def get_current_playback(self):
@@ -139,7 +130,7 @@ class SpotifyClient:
 
     def get_audio_features_of_top_tracks(self):
         """Requires OAuth token with scope user-read-top"""
-        top_track_data = self.get_top_tracks('short_term', 0, 5)
+        top_track_data = self.get_top('tracks', 'short_term', 0, 5)
         audio_features_vectors = []
         for track_object in top_track_data['items']:
             id = track_object['id']
@@ -154,8 +145,8 @@ if __name__ == '__main__':
 
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
-    # mySpotify.get_top_artists('medium_term')
-    # mySpotify.get_top_tracks('short_term')
+    # mySpotify.get_top('artists', 'medium_term')
+    # mySpotify.get_top('tracks', 'short_term')
     # mySpotify.get_available_genre_seeds()
     # mySpotify.get_saved_tracks()
     # mySpotify.get_audio_features_of_currently_playing_track()
