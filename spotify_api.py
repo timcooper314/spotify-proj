@@ -32,7 +32,7 @@ class SpotifyClient:
         self.base_url = 'https://api.spotify.com/'
         self.user = '1259570943'
         self._params = {}
-        self.headers = {'Authorization': f"Bearer {self.AUTH_TOKEN}"}
+        self._headers = {'Authorization': f"Bearer {self.AUTH_TOKEN}"}
 
     @property
     def params(self):
@@ -41,6 +41,14 @@ class SpotifyClient:
     @params.setter
     def params(self, value):
         self._params = value
+
+    @property
+    def headers(self):
+        return self._headers
+
+    @params.setter
+    def headers(self, value):
+        self._headers = value
 
     @property
     def data(self):
@@ -52,14 +60,14 @@ class SpotifyClient:
 
     def _get_api_data(self, endpoint):
         response = requests.get(f"https://api.spotify.com/v1/{endpoint}",
-                                headers=self.headers,
+                                headers=self._headers,
                                 params=self._params)
         return response.json()
 
     def _post_api_data(self, endpoint):
         response = requests.post(f"https://api.spotify.com/v1/{endpoint}",
-                                headers=self.headers,
-                                json=self._data)
+                                headers=self._headers,
+                                data=self._data)
         return response.json()
 
     def get_recently_played(self):
@@ -154,15 +162,24 @@ class SpotifyClient:
         pprint(audio_features_vectors)
         return audio_features_vectors
 
-    def create_playlist(self):
-        """ """
+    def create_playlist(self, name, description):
+        """Creates a playlist. Requires scope playlist-modify-public."""
         endpoint = f"users/{self.user}/playlists"
-        request = {"name": "Autogen Playlist",
-                  "description": "New playlist description",
-                  "public": False}
-        self._data = request
+        self._headers['Content-Type'] = 'application/json'
+        request = {"name": name,
+                  "description": description,
+                  "public": True}
+        self._data = json.dumps(request)
         r = self._post_api_data(endpoint)
-        print("succes")
+        print(r)
+        return
+
+    def add_tracks_to_playlist(self, playlist_id='3b6enPHFMgh3Wrlavc0kY2', track_ids=['2s8ofs8CeRdQyHKk0ORnWD', '3cI9kNRxlpYYuCAEbP91My']):
+        """Adds tracks to playlist. """
+        endpoint = f"playlists/{playlist_id}/tracks"
+        self._headers['Content-Type'] = 'application/json'
+        self._data = json.dumps([f'spotify:track:{id}' for id in track_ids])
+        r = self._post_api_data(endpoint)
         print(r)
         return
 
@@ -178,7 +195,8 @@ if __name__ == '__main__':
     # mySpotify.get_saved_tracks()
     # mySpotify.get_audio_features_of_currently_playing_track()
     # mySpotify.get_audio_features_of_top_tracks()
-    # mySpotify.create_playlist()
+    mySpotify.create_playlist("autogen2 playlist", "a new playlist")
+    # mySpotify.add_tracks_to_playlist()
 
     # idea: use cosine similarity on artist genres to find similar artsists
         # Make playlist based on two or more peoples common genre interests
@@ -190,3 +208,6 @@ if __name__ == '__main__':
     # Make playlist of tracks with tempo=120
     # TODO: Start making tests
     # TODO: Make create playlist function
+    # TODO: Try recommendations endpoint
+
+    # Use liveness metrix to make playlist of live music
