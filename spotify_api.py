@@ -2,9 +2,16 @@ import requests
 from pprint import pprint
 from collections import defaultdict
 
+
+def _filter_audio_features(spotify_data):
+    desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness', 'liveness','speechiness', 'tempo']
+    additional_fields = ['key', 'loudness', 'mode', 'time_signature', 'valence']
+    return {field: spotify_data['audio_features'][0][field] for field in desired_fields}
+
+
 class SpotifyClient:
     def __init__(self):
-        self.AUTH_TOKEN = 'BQCYS9ZZlHYVpsSwy4gpQHudiMV6xfyFE_e9drIOLYMfudTjt7Zx8SSGiVZvHhAntuL5GKxoHUqKDeurjmNSiYBm15EqAISuM1Vz_-Aq5nGaO-57VstY9nwtn2F4Ge4v6c9m2SDgcIU0KDL695ndlWNHZfgi8YG-z7VzQ5wwB6P3N2OdIn29'
+        self.AUTH_TOKEN = 'BQBTXmiMtQmGJTAy02XQZY6NZSzwVnCB3jG8VeeP_PPKbgIZsty2BLVKVyFGvNwIsBE_-ScI7ANXcMhqLdote5yUqEBq8fYTy8SntavYV_JahGZl5YvTc5xuujMZ0rQadY9QmA-nw1fEbneY-R7uZlxQ6S-UyLVxKKO9ic7IpCJ5QzCKbpFt'
         self.base_url = 'https://api.spotify.com/'
         self.user = '1259570943'
         self._params = {}
@@ -70,7 +77,7 @@ class SpotifyClient:
         current_track = spotify_data['item']['name']
         current_artist = spotify_data['item']['artists'][0]['name']
         print(f"Currently playing:  {current_track} by {current_artist}")
-        pprint(spotify_data)
+        # pprint(spotify_data)
         return spotify_data
 
     def get_available_genre_seeds(self):
@@ -93,12 +100,16 @@ class SpotifyClient:
 
     def get_audio_features_of_currently_playing_track(self):
         """Requires OAuth token with scope user-read-currently-playing"""
-        current_data = self.get_current_playback()
-        self.params['ids'] = current_data['item']['id']  # '54TbgZjTIl5ACMgBblalDk', '7EPTw7FcIoe6r6TI5VGoVx'
+        current_playing_data = self.get_current_playback()
+        artist = current_playing_data['item']['artists'][0]['name']
+        track = current_playing_data['item']['name']
+        id = current_playing_data['item']['id']
+        self.params['ids'] = id  # '54TbgZjTIl5ACMgBblalDk', '7EPTw7FcIoe6r6TI5VGoVx'
         endpoint = "audio-features"
         spotify_data = self._get_api_data(endpoint)
-        pprint(spotify_data)
-        return spotify_data
+        features = _filter_audio_features(spotify_data)
+        pprint(features)
+        return features
 
 
 if __name__ == '__main__':
@@ -107,7 +118,7 @@ if __name__ == '__main__':
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
     # mySpotify.get_top_artists('medium_term')
-    #mySpotify.get_top_tracks('short_term')
+    # mySpotify.get_top_tracks('short_term')
     # mySpotify.get_available_genre_seeds()
     # mySpotify.get_saved_tracks()
     mySpotify.get_audio_features_of_currently_playing_track()
