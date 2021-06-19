@@ -11,7 +11,7 @@ def _filter_audio_features(spotify_data):
 
 class SpotifyClient:
     def __init__(self):
-        self.AUTH_TOKEN = 'BQBTXmiMtQmGJTAy02XQZY6NZSzwVnCB3jG8VeeP_PPKbgIZsty2BLVKVyFGvNwIsBE_-ScI7ANXcMhqLdote5yUqEBq8fYTy8SntavYV_JahGZl5YvTc5xuujMZ0rQadY9QmA-nw1fEbneY-R7uZlxQ6S-UyLVxKKO9ic7IpCJ5QzCKbpFt'
+        self.AUTH_TOKEN = 'BQAgPp6VtC35X3_UHnT7AJ1fVfiNfJFH5_Eb_eOo2qwvFDUlqRwl0gHygDvoFrsKtoLLJyI_Q2uOJH2R1c6lrwMMMcheaoFujlmxXRd9PgyndKzTvAJOZN-bS6fk-NOODDQpaX3C71x7UwEPYrt0N4SnesnO532Ka7JQ6R71qWV9QDZGeRjR'
         self.base_url = 'https://api.spotify.com/'
         self.user = '1259570943'
         self._params = {}
@@ -68,8 +68,8 @@ class SpotifyClient:
         # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
         top_track_list = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
                           for track_object in spotify_data['items']]
-        pprint(top_track_list)
-        return top_track_list
+        # pprint(top_track_list)
+        return spotify_data
 
     def get_current_playback(self):
         endpoint ="me/player/"
@@ -98,18 +98,34 @@ class SpotifyClient:
         pprint(top_tracks)
         return top_tracks
 
+    def get_audio_features(self, id):
+        endpoint = "audio-features"
+        self.params['ids'] = id
+        spotify_data = self._get_api_data(endpoint)
+        features = _filter_audio_features(spotify_data)
+        return features
+
     def get_audio_features_of_currently_playing_track(self):
         """Requires OAuth token with scope user-read-currently-playing"""
         current_playing_data = self.get_current_playback()
         artist = current_playing_data['item']['artists'][0]['name']
         track = current_playing_data['item']['name']
         id = current_playing_data['item']['id']
-        self.params['ids'] = id  # '54TbgZjTIl5ACMgBblalDk', '7EPTw7FcIoe6r6TI5VGoVx'
-        endpoint = "audio-features"
-        spotify_data = self._get_api_data(endpoint)
-        features = _filter_audio_features(spotify_data)
+        features = self.get_audio_features(id)
         pprint(features)
         return features
+
+    def get_audio_features_of_top_tracks(self):
+        """Requires OAuth token with scope user-read-top"""
+        top_track_data = self.get_top_tracks('short_term', 0, 5)
+        audio_features_vectors = []
+        for track_object in top_track_data['items']:
+            id = track_object['id']
+            features = self.get_audio_features(id)
+            audio_features_vectors.append(list(features.values()))
+        pprint(audio_features_vectors)
+        return audio_features_vectors
+
 
 
 if __name__ == '__main__':
@@ -121,8 +137,11 @@ if __name__ == '__main__':
     # mySpotify.get_top_tracks('short_term')
     # mySpotify.get_available_genre_seeds()
     # mySpotify.get_saved_tracks()
-    mySpotify.get_audio_features_of_currently_playing_track()
+    # mySpotify.get_audio_features_of_currently_playing_track()
+    mySpotify.get_audio_features_of_top_tracks()
 
     # idea: use cosine similarity on artist genres to find similar artsists
         # Make playlist based on two or more peoples common genre interests
         # Make playlist of a genre from music in library
+    # use cosine similarity on audio features of tracks
+        # Create symmetric matrix of similarity values
