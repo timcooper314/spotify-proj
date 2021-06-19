@@ -8,19 +8,26 @@ class SpotifyClientAuthTokenExpiredException(Exception):
 
 
 def _filter_audio_features(spotify_data):
-    desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness', 'liveness','speechiness', 'tempo']
+    desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness', 'liveness', 'speechiness', 'tempo']
     additional_fields = ['key', 'loudness', 'mode', 'time_signature', 'valence']
     return {field: spotify_data['audio_features'][0][field] for field in desired_fields}
 
 
-def check_api_response( response):
+def check_api_response(response):
     if 'error' in response:
         raise SpotifyClientAuthTokenExpiredException(response['error']['message'])
 
 
+def get_auth_token():
+    with open('auth_token.txt') as f:
+        token = f.readlines()
+        f.close()
+    return token[0]
+
+
 class SpotifyClient:
     def __init__(self):
-        self.AUTH_TOKEN = 'BQAgPp6VtC35X3_UHnT7AJ1fVfiNfJFH5_Eb_eOo2qwvFDUlqRwl0gHygDvoFrsKtoLLJyI_Q2uOJH2R1c6lrwMMMcheaoFujlmxXRd9PgyndKzTvAJOZN-bS6fk-NOODDQpaX3C71x7UwEPYrt0N4SnesnO532Ka7JQ6R71qWV9QDZGeRjR'
+        self.AUTH_TOKEN = get_auth_token()
         self.base_url = 'https://api.spotify.com/'
         self.user = '1259570943'
         self._params = {}
@@ -84,7 +91,7 @@ class SpotifyClient:
         return spotify_data
 
     def get_current_playback(self):
-        endpoint ="me/player/"
+        endpoint = "me/player/"
         spotify_data = self._get_api_data(endpoint)
         check_api_response(spotify_data)
         current_track = spotify_data['item']['name']
@@ -140,7 +147,6 @@ class SpotifyClient:
             audio_features_vectors.append(list(features.values()))
         pprint(audio_features_vectors)
         return audio_features_vectors
-
 
 
 if __name__ == '__main__':
