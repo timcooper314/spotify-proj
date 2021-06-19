@@ -2,6 +2,16 @@ import requests
 from pprint import pprint
 from collections import defaultdict
 
+
+class SpotifyClientAuthTokenExpiredException(Exception):
+    pass
+
+
+def check_api_response( response):
+    if 'error' in response:
+        raise SpotifyClientAuthTokenExpiredException(response['error']['message'])
+
+
 class SpotifyClient:
     def __init__(self):
         self.AUTH_TOKEN = 'BQDwW4F8vZ-J03SL56hwaRL7MyJFiDLSITY8xuNZ3zWNx-Tv0vDs_BU6tOPxL6SOnkRxKrzKAmyCM1s76SOa8kEeFKd4kV-T75gzGY1MNz2FORx3_nTsgBlTKHBgA2RJSdqS_fh07Wa7k96q-sWAs55KIT5J9_exsV-iZ9rlOg'
@@ -27,6 +37,7 @@ class SpotifyClient:
     def get_recently_played(self):
         endpoint = 'player/recently-played/'
         spotify_data = self._get_api_data(endpoint)
+        check_api_response(spotify_data)
         recently_played = defaultdict(list)
         for item in spotify_data['items']:
             recently_played[item['track']['album']['artists'][0]['name']].append(item['track']['name'])
@@ -43,6 +54,7 @@ class SpotifyClient:
         self.params['limit'] = limit
         self.params['offset'] = offset
         spotify_data = self._get_api_data(endpoint)
+        check_api_response(spotify_data)
         fave_artists = [artist_object['name'] for artist_object in spotify_data['items']]
         pprint(fave_artists)
         return fave_artists
@@ -57,6 +69,7 @@ class SpotifyClient:
         self.params['limit'] = limit
         self.params['offset'] = offset
         spotify_data = self._get_api_data(endpoint)
+        check_api_response(spotify_data)
         # top_tracks = defaultdict(list)
         # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
         top_track_list = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
@@ -67,6 +80,7 @@ class SpotifyClient:
     def get_current_playback(self):
         endpoint ="player/"
         spotify_data = self._get_api_data(endpoint)
+        check_api_response(spotify_data)
         current_track = spotify_data['item']['name']
         current_artist = spotify_data['item']['artists'][0]['name']
         print(f"Currently playing:  {current_track} by {current_artist}")
@@ -75,12 +89,14 @@ class SpotifyClient:
     def get_available_genre_seeds(self):
         endpoint = 'recommendations/available-genre-seeds'
         spotify_data = self._get_api_data(endpoint)
+        check_api_response(spotify_data)
         pprint(spotify_data)
         return
 
     def get_saved_tracks(self):
         endpoint = 'tracks'
         spotify_data = self._get_api_data(endpoint)
+        check_api_response(spotify_data)
         top_tracks = defaultdict(list)
         for track_object in spotify_data['items']:
             artist = track_object['track']['album']['artists'][0]['name']
