@@ -1,6 +1,7 @@
 import requests
 from pprint import pprint
 from collections import defaultdict
+import json
 
 
 class SpotifyClientAuthTokenExpiredException(Exception):
@@ -41,10 +42,24 @@ class SpotifyClient:
     def params(self, value):
         self._params = value
 
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, body):
+        self._data = body
+
     def _get_api_data(self, endpoint):
         response = requests.get(f"https://api.spotify.com/v1/{endpoint}",
                                 headers=self.headers,
                                 params=self._params)
+        return response.json()
+
+    def _post_api_data(self, endpoint):
+        response = requests.post(f"https://api.spotify.com/v1/{endpoint}",
+                                headers=self.headers,
+                                json=self._data)
         return response.json()
 
     def get_recently_played(self):
@@ -139,6 +154,18 @@ class SpotifyClient:
         pprint(audio_features_vectors)
         return audio_features_vectors
 
+    def create_playlist(self):
+        """ """
+        endpoint = f"users/{self.user}/playlists"
+        request = {"name": "Autogen Playlist",
+                  "description": "New playlist description",
+                  "public": False}
+        self._data = request
+        r = self._post_api_data(endpoint)
+        print("succes")
+        print(r)
+        return
+
 
 if __name__ == '__main__':
     mySpotify = SpotifyClient()
@@ -150,10 +177,16 @@ if __name__ == '__main__':
     # mySpotify.get_available_genre_seeds()
     # mySpotify.get_saved_tracks()
     # mySpotify.get_audio_features_of_currently_playing_track()
-    mySpotify.get_audio_features_of_top_tracks()
+    # mySpotify.get_audio_features_of_top_tracks()
+    # mySpotify.create_playlist()
 
     # idea: use cosine similarity on artist genres to find similar artsists
         # Make playlist based on two or more peoples common genre interests
         # Make playlist of a genre from music in library
     # use cosine similarity on audio features of tracks
         # Create symmetric matrix of similarity values
+
+    # analyse tracks in a playlist, or album ("vibe" of album?) eg. e-1
+    # Make playlist of tracks with tempo=120
+    # TODO: Start making tests
+    # TODO: Make create playlist function
