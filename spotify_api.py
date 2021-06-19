@@ -33,6 +33,7 @@ class SpotifyClient:
         self.user = '1259570943'
         self._params = {}
         self._headers = {'Authorization': f"Bearer {self.AUTH_TOKEN}"}
+        self._data = {}
 
     @property
     def params(self):
@@ -46,7 +47,7 @@ class SpotifyClient:
     def headers(self):
         return self._headers
 
-    @params.setter
+    @headers.setter
     def headers(self, value):
         self._headers = value
 
@@ -66,8 +67,8 @@ class SpotifyClient:
 
     def _post_api_data(self, endpoint):
         response = requests.post(f"https://api.spotify.com/v1/{endpoint}",
-                                headers=self._headers,
-                                data=self._data)
+                                 headers=self._headers,
+                                 data=self._data)
         return response.json()
 
     def get_recently_played(self):
@@ -79,7 +80,6 @@ class SpotifyClient:
             recently_played[item['track']['album']['artists'][0]['name']].append(item['track']['name'])
         pprint(recently_played)
         return recently_played
-
 
     def get_top(self, type, time_range='medium_term', offset=0, limit=20):
         """Retrieves your most played.
@@ -96,12 +96,12 @@ class SpotifyClient:
         if type == 'artists':
             top_data = [artist_object['name'] for artist_object in spotify_data['items']]
             pprint(top_data)
-        else: # 'tracks'
+        else:  # 'tracks'
             # top_tracks = defaultdict(list)
             # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
             top_data = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
-                              for track_object in spotify_data['items']]
-            # pprint(top_data)
+                        for track_object in spotify_data['items']]
+        pprint(top_data)
         return spotify_data
 
     def get_current_playback(self):
@@ -167,21 +167,31 @@ class SpotifyClient:
         endpoint = f"users/{self.user}/playlists"
         self._headers['Content-Type'] = 'application/json'
         request = {"name": name,
-                  "description": description,
-                  "public": True}
+                   "description": description,
+                   "public": True}
         self._data = json.dumps(request)
-        r = self._post_api_data(endpoint)
-        print(r)
-        return
+        response = self._post_api_data(endpoint)
+        pprint(response)
+        return response
 
-    def add_tracks_to_playlist(self, playlist_id='3b6enPHFMgh3Wrlavc0kY2', track_ids=['2s8ofs8CeRdQyHKk0ORnWD', '3cI9kNRxlpYYuCAEbP91My']):
+    def add_tracks_to_playlist(self, playlist_id, track_ids):  # '3b6enPHFMgh3Wrlavc0kY2'
         """Adds tracks to playlist. """
         endpoint = f"playlists/{playlist_id}/tracks"
         self._headers['Content-Type'] = 'application/json'
         self._data = json.dumps([f'spotify:track:{id}' for id in track_ids])
-        r = self._post_api_data(endpoint)
-        print(r)
-        return
+        response = self._post_api_data(endpoint)
+        pprint(response)
+        return response
+
+    def create_playlist_of_top_tracks(self, time_range='short_term', limit=20):
+        response = self.create_playlist(f"{limit}_{time_range}",
+                                        f"{limit} ripper tracks from the {time_range} based on number of plays.")
+        playlist_id = response['id']
+        top_tracks_data = self.get_top('tracks', time_range, 0, limit)
+        track_ids = [track_data['id'] for track_data in top_tracks_data['items']]
+        response = self.add_tracks_to_playlist(playlist_id, track_ids)
+        pprint(response)
+        return response
 
 
 if __name__ == '__main__':
@@ -190,13 +200,14 @@ if __name__ == '__main__':
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
     # mySpotify.get_top('artists', 'medium_term')
-    # mySpotify.get_top('tracks', 'short_term')
+    # mySpotify.get_top('tracks', 'medium_term')
     # mySpotify.get_available_genre_seeds()
     # mySpotify.get_saved_tracks()
     # mySpotify.get_audio_features_of_currently_playing_track()
     # mySpotify.get_audio_features_of_top_tracks()
-    mySpotify.create_playlist("autogen2 playlist", "a new playlist")
+    # mySpotify.create_playlist("autogen2 playlist", "a new playlist")
     # mySpotify.add_tracks_to_playlist()
+    mySpotify.create_playlist_of_top_tracks('medium_term')
 
     # idea: use cosine similarity on artist genres to find similar artsists
         # Make playlist based on two or more peoples common genre interests
