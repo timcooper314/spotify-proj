@@ -3,6 +3,7 @@ from pprint import pprint
 from collections import defaultdict
 import json
 import numpy as np
+import pandas as pd
 
 
 class SpotifyClientAuthTokenExpiredException(Exception):
@@ -55,6 +56,7 @@ class SpotifyClient:
         self._params = {}
         self._headers = {'Authorization': f"Bearer {self.AUTH_TOKEN}"}
         self._data = {}
+        self.track_audio_features_df = pd.DataFrame(columns=['track', 'artist', 'acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness'])
 
     @property
     def params(self):
@@ -108,6 +110,7 @@ class SpotifyClient:
             time_range: short_term, medium_term, long_term;
             0<=offset<50: a shift down the list;
             0<=limit<=50: number of results to retrieve"""
+        # TODO: Make this method work for limit>50 (i.e. by using offset>0)
         endpoint = f"me/top/{top_type}"
         self.params['time_range'] = time_range
         self.params['limit'] = limit
@@ -178,7 +181,7 @@ class SpotifyClient:
 
     def get_audio_features_of_top_tracks(self):
         """Requires OAuth token with scope user-read-top"""
-        top_track_data = self.get_top('tracks', 'short_term', 0, 5)
+        top_track_data = self.get_top('tracks', 'medium_term', 0, 5)
         audio_features_vectors = []
         for track_object in top_track_data['items']:
             track_id = track_object['id']
@@ -221,6 +224,13 @@ class SpotifyClient:
         return response
 
 
+    def create_track_df(self):
+        top_data = self.get_top('tracks', limit=5)
+        self.track_audio_features_df['track'] = [track_object['name'] for track_object in top_data['items']]
+        self.track_audio_features_df['artist'] = [track_object['artists'][0]['name'] for track_object in top_data['items']]
+        print(self.track_audio_features_df.head())
+
+
 if __name__ == '__main__':
     mySpotify = SpotifyClient()
 
@@ -231,12 +241,15 @@ if __name__ == '__main__':
     # mySpotify.get_available_genre_seeds()
     # mySpotify.get_saved_tracks(limit=2)
     # mySpotify.get_audio_features_of_currently_playing_track()
-    audio_array = mySpotify.get_audio_features_of_top_tracks()
+
     # mySpotify.create_playlist("autogen2 playlist", "a new playlist")
     # mySpotify.add_tracks_to_playlist()
     # mySpotify.create_playlist_of_top_tracks('short_term')
-    compute_similarity_matrix(audio_array)
 
+    # audio_array = mySpotify.get_audio_features_of_top_tracks()
+    # compute_similarity_matrix(audio_array)
+
+    mySpotify.create_track_df()
     # idea: use cosine similarity on artist genres to find similar artsists
         # Make playlist based on two or more peoples common genre interests
         # Make playlist of a genre from music in library
