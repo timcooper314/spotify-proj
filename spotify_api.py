@@ -56,7 +56,7 @@ class SpotifyClient:
         self._params = {}
         self._headers = {'Authorization': f"Bearer {self.AUTH_TOKEN}"}
         self._data = {}
-        self.track_audio_features_df = pd.DataFrame(columns=['track', 'artist', 'acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness'])
+        self.track_audio_features_df = pd.DataFrame(columns=['track', 'artist', 'id', 'acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness'])
 
     @property
     def params(self):
@@ -162,6 +162,7 @@ class SpotifyClient:
         return top_tracks
 
     def get_audio_features(self, track_ids):
+        #TODO: Get this to work for a list of ids
         endpoint = "audio-features"
         self.params['ids'] = track_ids
         spotify_data = self._get_api_data(endpoint)
@@ -176,7 +177,7 @@ class SpotifyClient:
         # track = current_playing_data['item']['name']
         track_id = current_playing_data['item']['id']
         features = self.get_audio_features(track_id)
-        pprint(features)
+        # pprint(features)
         return features
 
     def get_audio_features_of_top_tracks(self):
@@ -187,7 +188,7 @@ class SpotifyClient:
             track_id = track_object['id']
             features = self.get_audio_features(track_id)
             audio_features_vectors.append(list(features.values()))
-        pprint(audio_features_vectors)
+        # pprint(features)
         return np.array([vec for vec in audio_features_vectors])
 
     def create_playlist(self, name, description):
@@ -223,12 +224,29 @@ class SpotifyClient:
         pprint(response)
         return response
 
+    def get_playlists_items(self, playlist_id='1uPPJSAPbKGxszadexGQJL'):
+        endpoint = f"playlists/{playlist_id}/tracks"
+        spotify_data = self._get_api_data(endpoint)
+        #pprint(spotify_data)
+        self.track_audio_features_df['track'] = [track_object['track']['name'] for track_object in spotify_data['items']]
+        self.track_audio_features_df['artist'] = [track_object['track']['artists'][0]['name'] for track_object in
+                                                  spotify_data['items']]
+        self.track_audio_features_df['id'] = [track_object['track']['id'] for track_object in
+                                                  spotify_data['items']]
+        print(self.track_audio_features_df.head())
 
-    def create_track_df(self):
+    def create_top_tracks_df(self):
         top_data = self.get_top('tracks', limit=5)
+        af = self.get_audio_features_of_top_tracks()
         self.track_audio_features_df['track'] = [track_object['name'] for track_object in top_data['items']]
         self.track_audio_features_df['artist'] = [track_object['artists'][0]['name'] for track_object in top_data['items']]
+        self.track_audio_features_df['acousticness'] = af[:, 0]
+        self.track_audio_features_df['danceability'] = af[:, 1]
+        self.track_audio_features_df['energy'] = af[:, 2]
+        self.track_audio_features_df['instrumentalness'] = af[:, 3]
+        self.track_audio_features_df['speechiness'] = af[:, 4]
         print(self.track_audio_features_df.head())
+        return self.track_audio_features_df
 
 
 if __name__ == '__main__':
@@ -248,9 +266,10 @@ if __name__ == '__main__':
 
     # audio_array = mySpotify.get_audio_features_of_top_tracks()
     # compute_similarity_matrix(audio_array)
+    mySpotify.get_playlists_items()
+    # mySpotify.create_top_tracks_df()
 
-    mySpotify.create_track_df()
-    # idea: use cosine similarity on artist genres to find similar artsists
+    # idea: use cosine similarity on artist genres to find similar artists
         # Make playlist based on two or more peoples common genre interests
         # Make playlist of a genre from music in library
     # use cosine similarity on audio features of tracks
@@ -259,9 +278,11 @@ if __name__ == '__main__':
     # analyse tracks in a playlist, or album ("vibe" of album?) eg. e-1
     # Make playlist of tracks with tempo=120
     # TODO: Start making tests
-    # TODO: Make create playlist function
     # TODO: Try recommendations endpoint
     # TODO: create track subclass
     # Use liveness metrix to make playlist of live music
 
     # Reorder playlist e- in ascending energy order?
+
+    # For n tracks, the number of similarity computations will be
+    # 1+2+...+(n-1)  = n*(n-1)/2  = O(n^2)...
