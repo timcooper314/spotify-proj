@@ -119,7 +119,6 @@ class SpotifyClient:
         spotify_data = self.get_api_data(endpoint)
         if top_type == 'artists':
             top_data = [artist_object['name'] for artist_object in spotify_data['items']]
-            pprint(top_data)
         else:  # 'tracks'
             # top_tracks = defaultdict(list)
             # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
@@ -156,26 +155,33 @@ class SpotifyClient:
         pprint(top_tracks)
         return top_tracks
 
-    def get_audio_features_of_currently_playing_track(self):
-        """Requires OAuth token with scope user-read-currently-playing"""
-        current_playing_data = self.get_current_playback()
-        # artist = current_playing_data['item']['artists'][0]['name']
-        # track = current_playing_data['item']['name']
-        track_id = current_playing_data['item']['id']
-        features = self.get_audio_features(track_id)
-        # pprint(features)
-        return features
+    def get_audio_features(self, track_ids):
+        # TODO: Get this to work for a list of ids
+        endpoint = "audio-features"
+        self.params['ids'] = track_ids
+        spotify_data = self.get_api_data(endpoint)
+        return filter_audio_features(spotify_data)
 
-    def get_audio_features_of_top_tracks(self):
-        """Requires OAuth token with scope user-read-top"""
-        top_track_data = self.get_top('tracks', 'medium_term', 0, 5)
-        audio_features_vectors = []
-        for track_object in top_track_data['items']:
-            track_id = track_object['id']
-            features = self.get_audio_features(track_id)
-            audio_features_vectors.append(list(features.values()))
-        # pprint(features)
-        return np.array([vec for vec in audio_features_vectors])
+    # def get_audio_features_of_currently_playing_track(self):
+    #     """Requires OAuth token with scope user-read-currently-playing"""
+    #     current_playing_data = self.get_current_playback()
+    #     # artist = current_playing_data['item']['artists'][0]['name']
+    #     # track = current_playing_data['item']['name']
+    #     track_id = current_playing_data['item']['id']
+    #     features = self.get_audio_features(track_id)
+    #     # pprint(features)
+    #     return features
+
+    # def get_audio_features_of_top_tracks(self):
+    #     """Requires OAuth token with scope user-read-top"""
+    #     top_track_data = self.get_top('tracks', 'medium_term', 0, 5)
+    #     audio_features_vectors = []
+    #     for track_object in top_track_data['items']:
+    #         track_id = track_object['id']
+    #         features = self.get_audio_features(track_id)
+    #         audio_features_vectors.append(list(features.values()))
+    #     # pprint(features)
+    #     return np.array([vec for vec in audio_features_vectors])
 
     def create_playlist(self, name, description):
         """Creates a playlist. Requires scope playlist-modify-public."""
@@ -189,15 +195,15 @@ class SpotifyClient:
         pprint(response)
         return response
 
-    def create_playlist_of_top_tracks(self, time_range='short_term', limit=20):
-        response = self.create_playlist(f"{limit}_{time_range}",
-                                        f"{limit} ripper tracks from the {time_range} based on number of plays.")
-        playlist_id = response['id']
-        top_tracks_data = self.get_top('tracks', time_range, 0, limit)
-        track_ids = [track_data['id'] for track_data in top_tracks_data['items']]
-        response = self.add_tracks_to_playlist(playlist_id, track_ids)
-        pprint(response)
-        return response
+    # def create_playlist_of_top_tracks(self, time_range='short_term', limit=20):
+    #     response = self.create_playlist(f"{limit}_{time_range}",
+    #                                     f"{limit} ripper tracks from the {time_range} based on number of plays.")
+    #     playlist_id = response['id']
+    #     top_tracks_data = self.get_top('tracks', time_range, 0, limit)
+    #     track_ids = [track_data['id'] for track_data in top_tracks_data['items']]
+    #     response = self.add_tracks_to_playlist(playlist_id, track_ids)
+    #     pprint(response)
+    #     return response
 
     # def create_top_tracks_df(self):
     #     top_data = self.get_top('tracks', limit=5)

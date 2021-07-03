@@ -14,12 +14,6 @@ def get_artist(playlist_item):
     return playlist_item['track']['artists'][0]['name']
 
 
-def filter_audio_features(spotify_data):
-    desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness']
-    # additional_fields = ['liveness', 'tempo', 'key', 'loudness', 'mode', 'time_signature', 'valence']
-    return {field: spotify_data['audio_features'][0][field] for field in desired_fields}
-
-
 class Playlist:  # (SpotifyClient):
     def __init__(self, playlist_id):
         self.spotify_client = SpotifyClient()
@@ -57,34 +51,31 @@ class Playlist:  # (SpotifyClient):
         audio_features_vectors = []
         for track_object in playlist_data['items']:
             track_id = track_object['track']['id']
-            features = self.get_audio_features(track_id)
+            features = self.spotify_client.get_audio_features(track_id)
             audio_features_vectors.append(list(features.values()))
         return np.array([vec for vec in audio_features_vectors])
 
-    def get_audio_features(self, track_ids):
-        # TODO: Get this to work for a list of ids
-        endpoint = "audio-features"
-        self.spotify_client.params['ids'] = track_ids
-        spotify_data = self.spotify_client.get_api_data(endpoint)
-        features = filter_audio_features(spotify_data)
-        return features
 
+# TODO: work out functionality for creating playlist of top tracks,
+# TODO: get audio features of top tracks
+# TODO: can instance of playlist be used by dummy playlist (e.g. top tracks list),
+# TODO: , to allow use of methods such as get audio featuress
 
 if __name__ == '__main__':
-    # my_pid = '1uPPJSAPbKGxszadexGQJL'
-    # simply = Playlist(my_pid)
-    # simply.create_playlist_df()
-    # simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
-    #
-    # pprint(simply.playlist_df.head())
+    my_pid = '1uPPJSAPbKGxszadexGQJL'
+    simply = Playlist(my_pid)
+    simply.create_playlist_df()
+    simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
 
-    mySpotify = SpotifyClient()
+    pprint(simply.playlist_df.head())
+
+    # mySpotify = SpotifyClient()
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
     # mySpotify.get_top('artists', 'medium_term')
-    mySpotify.get_top('tracks', 'long_term', limit=50)
-    # mySpotify.get_available_genre_seeds()
-    # mySpotify.get_saved_tracks(limit=2)
+    # top_tracks = mySpotify.get_top('tracks', 'short_term', limit=10)
+    # top_playlist = Playlist('dummy_id')
+
     # mySpotify.get_audio_features_of_currently_playing_track()
 
     # mySpotify.create_playlist("autogen2 playlist", "a new playlist")
