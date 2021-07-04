@@ -27,7 +27,17 @@ def get_id(playlist_item):
         return playlist_item['id']
 
 
-class Playlist:  # (SpotifyClient):
+def create_playlist_of_top_tracks(time_range='short_term', limit=20):
+    response = SpotifyClient().create_playlist(f"{limit}_{time_range}",
+                                               f"{limit} ripper tracks from the {time_range} based on number of plays.")
+    my_playlist = Playlist(response['id'])
+    top_tracks_data = SpotifyClient().get_top('tracks', time_range, 0, limit)
+    track_ids = [track_data['id'] for track_data in top_tracks_data['items']]
+    response = my_playlist.add_tracks_to_playlist(track_ids)
+    return response
+
+
+class Playlist:
     def __init__(self, playlist_id):
         self.spotify_client = SpotifyClient()
         self.playlist_id = playlist_id
@@ -70,6 +80,8 @@ class Playlist:  # (SpotifyClient):
 # TODO: Make a gui - tkinter?, pyqt5?
 
 
+
+
 if __name__ == '__main__':
     # my_pid = '1uPPJSAPbKGxszadexGQJL'
     # simply = Playlist(my_pid)
@@ -86,11 +98,11 @@ if __name__ == '__main__':
     # top_df = top_playlist.create_playlist_df(top_data)
     # print(top_df.head())
 
+    create_playlist_of_top_tracks('short_term', 10)
 
     # mySpotify.get_audio_features_of_currently_playing_track()
 
     # mySpotify.create_playlist("autogen2 playlist", "a new playlist")
-    # mySpotify.create_playlist_of_top_tracks('short_term')
 
     # audio_array = mySpotify.get_audio_features_of_top_tracks()
     # compute_similarity_matrix(audio_array)

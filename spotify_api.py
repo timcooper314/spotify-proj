@@ -170,7 +170,6 @@ class SpotifyClient:
         pprint(features)
         return features
 
-
     def create_playlist(self, name, description):
         """Creates a playlist. Requires scope playlist-modify-public."""
         endpoint = f"users/{self.user}/playlists"
@@ -180,15 +179,5 @@ class SpotifyClient:
                    "public": True}
         self._data = json.dumps(request)
         response = self.post_api_data(endpoint)
-        pprint(response)
-        return response
-
-    def create_playlist_of_top_tracks(self, time_range='short_term', limit=20):
-        response = self.create_playlist(f"{limit}_{time_range}",
-                                        f"{limit} ripper tracks from the {time_range} based on number of plays.")
-        playlist_id = response['id']
-        top_tracks_data = self.get_top('tracks', time_range, 0, limit)
-        track_ids = [track_data['id'] for track_data in top_tracks_data['items']]
-        response = self.add_tracks_to_playlist(playlist_id, track_ids)
         pprint(response)
         return response
