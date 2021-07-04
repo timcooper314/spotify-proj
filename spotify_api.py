@@ -128,7 +128,7 @@ class SpotifyClient:
         return spotify_data
 
     def get_current_playback(self):
-        endpoint = "me/player/"
+        endpoint = "me/player/currently-playing"
         spotify_data = self.get_api_data(endpoint)
         current_track = spotify_data['item']['name']
         current_artist = spotify_data['item']['artists'][0]['name']
