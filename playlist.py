@@ -7,11 +7,24 @@ from spotify_api import SpotifyClient
 
 
 def get_track(playlist_item):
-    return playlist_item['track']['name']
+    if 'track' in playlist_item:
+        return playlist_item['track']['name']
+    else:
+        return playlist_item['name']
 
 
 def get_artist(playlist_item):
-    return playlist_item['track']['artists'][0]['name']
+    if 'track' in playlist_item:
+        return playlist_item['track']['artists'][0]['name']
+    else:
+        return playlist_item['artists'][0]['name']
+
+
+def get_id(playlist_item):
+    if 'track' in playlist_item:
+        return playlist_item['track']['id']
+    else:
+        return playlist_item['id']
 
 
 class Playlist:  # (SpotifyClient):
@@ -20,9 +33,8 @@ class Playlist:  # (SpotifyClient):
         self.playlist_id = playlist_id
         self.playlist_df = pd.DataFrame(columns=['track', 'artist'])
 
-    def create_playlist_df(self):
+    def create_playlist_df(self, spotify_data):
         self.playlist_df = pd.DataFrame(columns=['track', 'artist'])
-        spotify_data = self.get_playlists_items()
         af = self.get_audio_features_of_tracks(spotify_data)
         self.playlist_df['track'] = [get_track(item) for item in spotify_data['items']]
         self.playlist_df['artist'] = [get_artist(item) for item in spotify_data['items']]
@@ -50,31 +62,30 @@ class Playlist:  # (SpotifyClient):
         """Requires OAuth token with scope user-read-top"""
         audio_features_vectors = []
         for track_object in playlist_data['items']:
-            track_id = track_object['track']['id']
-            features = self.spotify_client.get_audio_features(track_id)
-            audio_features_vectors.append(list(features.values()))
+            track_id = get_id(track_object)
+            track_features = self.spotify_client.get_audio_features(track_id)
+            audio_features_vectors.append(list(track_features.values()))
         return np.array([vec for vec in audio_features_vectors])
 
+# TODO: Make a gui - tkinter?, pyqt5?
 
-# TODO: work out functionality for creating playlist of top tracks,
-# TODO: get audio features of top tracks
-# TODO: can instance of playlist be used by dummy playlist (e.g. top tracks list),
-# TODO: , to allow use of methods such as get audio featuress
 
 if __name__ == '__main__':
-    my_pid = '1uPPJSAPbKGxszadexGQJL'
-    simply = Playlist(my_pid)
-    simply.create_playlist_df()
-    simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
+    # my_pid = '1uPPJSAPbKGxszadexGQJL'
+    # simply = Playlist(my_pid)
+    # simply_data = simply.get_playlists_items()
+    # simply.create_playlist_df(simply_data)
+    # # simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
+    # pprint(simply.playlist_df.head())
 
-    pprint(simply.playlist_df.head())
-
-    # mySpotify = SpotifyClient()
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
-    # mySpotify.get_top('artists', 'medium_term')
-    # top_tracks = mySpotify.get_top('tracks', 'short_term', limit=10)
-    # top_playlist = Playlist('dummy_id')
+
+    # top_playlist = Playlist('')
+    # top_data = top_playlist.spotify_client.get_top('tracks', 'short_term', limit=10)
+    # top_df = top_playlist.create_playlist_df(top_data)
+    # print(top_df.head())
+
 
     # mySpotify.get_audio_features_of_currently_playing_track()
 
