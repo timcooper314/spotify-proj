@@ -9,7 +9,7 @@ class SpotifyGUI(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Spotify Data...")
-        self.setGeometry(100, 100, 300, 300)  # x,y pos, width,height
+        self.setGeometry(100, 100, 500, 500)  # x,y pos, width,height
         self.window_layout = QVBoxLayout()
         self.create_horizontal_get_top_layout()
         self.create_horizontal_get_current_layout()
@@ -27,6 +27,15 @@ class SpotifyGUI(QDialog):
 
         self.number_tracks_text = QLineEdit("Number of tracks", self)
         layout.addWidget(self.number_tracks_text)
+
+        radio_buttons_layout = QVBoxLayout()
+        self.short_term_button = QRadioButton("Short term", self)
+        radio_buttons_layout.addWidget(self.short_term_button)
+        self.medium_term_button = QRadioButton("Medium term", self)
+        radio_buttons_layout.addWidget(self.medium_term_button)
+        self.long_term_button = QRadioButton("Long term", self)
+        radio_buttons_layout.addWidget(self.long_term_button)
+        layout.addLayout(radio_buttons_layout)
 
         start_button = QPushButton("Get top tracks", self)
         start_button.clicked.connect(self.get_top_click)
@@ -48,17 +57,20 @@ class SpotifyGUI(QDialog):
         self.results_table_box = QTableWidget()
 
     def get_top_click(self):
-        number_tracks = self.number_tracks_text.text()
-        # if not isinstance(number_tracks, int):
-        #     number_tracks = 10  # default
-        print(f"Get {number_tracks} top tracks")
-        my_spotify = SpotifyClient()
-        top_data = my_spotify.get_top(limit=number_tracks)
+        number_tracks = int(self.number_tracks_text.text())
+        if self.short_term_button.isChecked():
+            time_period = 'short_term'
+        elif self.medium_term_button.isChecked():
+            time_period = 'medium_term'
+        else:
+            time_period = 'long_term'
+        print(f"Get {number_tracks} {time_period.replace('_', ' ')} top tracks")
+        SpotifyClient().get_top(limit=number_tracks, time_range=time_period)
 
     def get_current_click(self):
         print("Getting currently playing track")
-        my_spotify = SpotifyClient()
-        current = my_spotify.get_current_playback()
+        SpotifyClient().get_current_playback()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

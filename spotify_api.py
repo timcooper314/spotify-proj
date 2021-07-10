@@ -122,12 +122,14 @@ class SpotifyClient:
         else:  # 'tracks'
             # top_tracks = defaultdict(list)
             # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
+            # TODO: Get all artists when mulitple artists for single track object.
             top_data = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
                         for track_object in spotify_data['items']]
         pprint(top_data)
         return spotify_data
 
     def get_current_playback(self):
+        """This only works when a song is playing..."""
         endpoint = "me/player/currently-playing"
         spotify_data = self.get_api_data(endpoint)
         current_track = spotify_data['item']['name']
