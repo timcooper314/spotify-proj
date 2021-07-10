@@ -48,6 +48,10 @@ def compute_similarity_matrix(audio_features_array):
     return similarity_matrix
 
 
+def get_artists(track_obj):
+    return ', '.join([artist['name'] for artist in track_obj['artists']])
+
+
 class SpotifyClient:
     def __init__(self):
         self.AUTH_TOKEN = get_auth_token()
@@ -122,11 +126,10 @@ class SpotifyClient:
         else:  # 'tracks'
             # top_tracks = defaultdict(list)
             # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
-            # TODO: Get all artists when mulitple artists for single track object.
-            top_data = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
+            top_data = [f"{track_object['name']} - {get_artists(track_object)}"
                         for track_object in spotify_data['items']]
         pprint(top_data)
-        return spotify_data
+        return top_data
 
     def get_current_playback(self):
         """This only works when a song is playing..."""
