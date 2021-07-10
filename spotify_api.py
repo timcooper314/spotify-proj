@@ -129,7 +129,7 @@ class SpotifyClient:
             top_data = [f"{track_object['name']} - {get_artists(track_object)}"
                         for track_object in spotify_data['items']]
         pprint(top_data)
-        return top_data
+        return spotify_data
 
     def get_current_playback(self):
         """This only works when a song is playing..."""
@@ -184,5 +184,5 @@ class SpotifyClient:
                    "public": True}
         self._data = json.dumps(request)
         response = self.post_api_data(endpoint)
-        pprint(response)
+        print(f"Created playlist {response['name']}")
         return response
