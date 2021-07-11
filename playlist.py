@@ -57,7 +57,7 @@ class Playlist:
 
     def get_playlists_items(self):
         endpoint = f"playlists/{self.playlist_id}/tracks"
-        spotify_data = self.spotify_client.get_api_data(endpoint)
+        spotify_data = self.spotify_client._get_api_data(endpoint)
         return spotify_data
 
     def add_tracks_to_playlist(self, track_ids):
@@ -65,7 +65,7 @@ class Playlist:
         endpoint = f"playlists/{self.playlist_id}/tracks"
         self.spotify_client._headers['Content-Type'] = 'application/json'
         self.spotify_client._data = json.dumps([f'spotify:track:{track_id}' for track_id in track_ids])
-        response = self.spotify_client.post_api_data(endpoint)
+        response = self.spotify_client._post_api_data(endpoint)
         return response
 
     def get_audio_features_of_tracks(self, playlist_data):
@@ -81,7 +81,7 @@ class Playlist:
 if __name__ == '__main__':
     # my_pid = '1uPPJSAPbKGxszadexGQJL'
     # simply = Playlist(my_pid)
-    # simply_data = simply.get_playlists_items(f)
+    # simply_data = simply.get_playlists_items()
     # simply.create_playlist_df(simply_data)
     # # simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
     # pprint(simply.playlist_df.head())
