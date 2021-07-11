@@ -1,5 +1,9 @@
 import sys
 from pprint import pprint
+import matplotlib
+matplotlib.use('Qt5Agg')
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout,\
     QPushButton, QRadioButton, QLineEdit, QDialog, QTableWidget, QTableView, QTextBrowser, QButtonGroup, QWidget
 from PyQt5.QtCore import QAbstractTableModel
@@ -7,11 +11,23 @@ from spotify_api import SpotifyClient
 from playlist import Playlist, create_playlist_of_top_tracks
 
 
+class MPlotCanvas(FigureCanvasQTAgg):
+    def __init__(self, parent=None):
+        fig = Figure(figsize=(2.5, 2.5), dpi=100)
+        self.axes = fig.add_axes([0.2, 0.2, 0.75, 0.75])
+        super(MPlotCanvas, self).__init__(fig)
+
+    def update_af_bar_plot(self, af):
+        self.axes.cla()
+        self.axes.bar(af.keys(), af.values(), color='g')
+        self.axes.tick_params(axis='both', which='major', labelsize=8, labelrotation=10)
+        self.draw()
+
 class SpotifyGUI(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Spotify Data...")
-        self.setGeometry(100, 100, 700, 400)  # x,y pos, width,height
+        self.setGeometry(100, 100, 800, 500)  # x,y pos, width,height
         self.window_layout = QVBoxLayout()
         self.create_horizontal_get_top_layout()
         # self.create_results_table()
@@ -82,6 +98,12 @@ class SpotifyGUI(QDialog):
         get_current_af_button = QPushButton("Get audio features of track", self)
         get_current_af_button.clicked.connect(self.get_af_click)
         layout.addWidget(get_current_af_button)
+
+        self.af_plot = MPlotCanvas(self)
+        # self.af_plot.axes.bar(['a','b','c','d','e'], [0, 0, 0, 0, 0])
+        # self.af_plot.axes.tick_params(axis='both', which='major', labelsize=8)
+        layout.addWidget(self.af_plot)
+
         self.horizontal_group_box_2.setLayout(layout)
 
     # def create_results_table(self):
@@ -128,6 +150,7 @@ class SpotifyGUI(QDialog):
         else:
             track_id = track_link_or_id
         af = SpotifyClient().get_audio_features(track_id)
+        self.af_plot.update_af_bar_plot(af)
         pprint(af)
 
     # TODO: Playlist analysis section...
