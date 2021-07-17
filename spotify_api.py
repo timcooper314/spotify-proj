@@ -193,3 +193,16 @@ class SpotifyClient:
         spotify_data = self._get_api_data(endpoint)
         print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
         return
+
+    def get_album_from_id(self, id):
+        endpoint = "albums"
+        self.params['ids'] = id
+        spotify_data = self._get_api_data(endpoint)
+        album_tracks = [track_obj['name'] for track_obj in spotify_data['albums'][0]['tracks']['items']]
+        pprint(album_tracks)
+        #print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
+        return spotify_data['albums'][0]['tracks']
+
+
+if __name__ == '__main__':
+    SpotifyClient().get_album_from_id('2nwfSapJ3YIq7Ofad4Vuh1')

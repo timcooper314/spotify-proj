@@ -119,22 +119,31 @@ class SpotifyGUI(QDialog):
         self.track_link_text = QLineEdit("Track link/ID", self)
         v_layout.addWidget(self.track_link_text)
 
-        get_current_track_button = QPushButton("Get current playing track", self)
-        get_current_track_button.clicked.connect(self.get_current_click)
-        v_layout.addWidget(get_current_track_button)
-
         self.playlist_link_text = QLineEdit("Playlist link/ID", self)
         v_layout.addWidget(self.playlist_link_text)
+
+        self.album_link_text = QLineEdit("Album link/ID", self)
+        v_layout.addWidget(self.album_link_text)
         layout.addLayout(v_layout)
 
         v_layout2 = QVBoxLayout()
-        get_current_af_button = QPushButton("Get audio features of track", self)
+
+        get_current_track_button = QPushButton("Get current playing track", self)
+        get_current_track_button.clicked.connect(self.get_current_click)
+        v_layout2.addWidget(get_current_track_button)
+
+        get_current_af_button = QPushButton("Get track", self)
         get_current_af_button.clicked.connect(self.get_af_click)
         v_layout2.addWidget(get_current_af_button)
 
-        get_playlist_af_button = QPushButton("Get audio features of playlist", self)
+        get_playlist_af_button = QPushButton("Get playlist", self)
         get_playlist_af_button.clicked.connect(self.get_playlist_click)
         v_layout2.addWidget(get_playlist_af_button)
+
+        get_album_af_button = QPushButton("Get album", self)
+        get_album_af_button.clicked.connect(self.get_album_click)
+        v_layout2.addWidget(get_album_af_button)
+
         layout.addLayout(v_layout2)
 
         self.af_plot = MPlotCanvas(self)
@@ -179,18 +188,21 @@ class SpotifyGUI(QDialog):
     def get_top_click(self):
         number_tracks = int(self.number_tracks_text.text())
         time_period = self.get_time_period()
+        print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
         if self.artists_button.isChecked():
             top_type = 'artists'
+            top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks,
+                                                           time_range=time_period)
         else:
             top_type = 'tracks'
-        print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
-        top_playlist = Playlist('')
-        top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
-        top_df = top_playlist.create_playlist_df(top_data)
-        af = top_playlist.get_mean_audio_features()
-        self.af_plot.update_af_bar_plot(af)
-        self.df = top_df
-        self.update_df_widget()
+            top_playlist = Playlist('')
+            top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks,
+                                                           time_range=time_period)
+            top_df = top_playlist.create_playlist_df(top_data)
+            af = top_playlist.get_mean_audio_features()
+            self.af_plot.update_af_bar_plot(af)
+            self.df = top_df
+            self.update_df_widget()
 
     def create_playlist_click(self):
         if self.artists_button.isChecked():
@@ -231,6 +243,23 @@ class SpotifyGUI(QDialog):
 
         self.df = pl.playlist_df
         self.update_df_widget()
+
+    def get_album_click(self):
+        album_link_or_id = self.album_link_text.text()
+        if album_link_or_id[0:4] == 'http':  # link
+            album_id = (album_link_or_id.split('/'))[4].split('?')[0]
+        else:
+            album_id = album_link_or_id
+
+        album_playlist = Playlist('')
+        album_data = SpotifyClient().get_album_from_id(album_id)
+        #top_data = album_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+        album_df = album_playlist.create_playlist_df(album_data)
+        af = album_playlist.get_mean_audio_features()
+        self.af_plot.update_af_bar_plot(af)
+        self.df = album_df
+        self.update_df_widget()
+
 
     # TODO: Playlist analysis section...
     # Input playlist id/link...
