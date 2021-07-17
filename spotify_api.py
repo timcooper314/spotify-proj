@@ -10,19 +10,19 @@ class SpotifyClientAuthTokenExpiredException(Exception):
     pass
 
 
-def get_auth_token():
+def _get_auth_token():
     with open('auth_token.txt') as f:
         token = f.readlines()
         f.close()
     return token[0]
 
 
-def check_api_response(response):
+def _check_api_response(response):
     if 'error' in response:
         raise SpotifyClientAuthTokenExpiredException(response['error']['message'])
 
 
-def filter_audio_features(spotify_data):
+def _filter_audio_features(spotify_data):
     desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness']
     additional_fields = ['liveness', 'tempo', 'key', 'loudness', 'mode', 'time_signature', 'valence']
     return {field: spotify_data['audio_features'][0][field] for field in desired_fields}
@@ -34,7 +34,7 @@ def compute_cosine(v_1, v_2):
 
 
 def compute_similarity_matrix(audio_features_array):
-    """Computes the (symmetrix, square) matrix of similarity values
+    """Computes the (symmetric, square) matrix of similarity values
      between tracks, given an array of audio features vectors."""
     num_tracks = len(audio_features_array)
     similarity_matrix = np.eye(num_tracks)
@@ -48,9 +48,13 @@ def compute_similarity_matrix(audio_features_array):
     return similarity_matrix
 
 
+def _get_artists(track_obj):
+    return ', '.join([artist['name'] for artist in track_obj['artists']])
+
+
 class SpotifyClient:
     def __init__(self):
-        self.AUTH_TOKEN = get_auth_token()
+        self.AUTH_TOKEN = _get_auth_token()
         self.base_url = 'https://api.spotify.com/'
         self.user = '1259570943'
         self._params = {}
@@ -82,23 +86,23 @@ class SpotifyClient:
     def data(self, body):
         self._data = body
 
-    def get_api_data(self, endpoint):
+    def _get_api_data(self, endpoint):
         response = requests.get(f"https://api.spotify.com/v1/{endpoint}",
                                 headers=self._headers,
                                 params=self._params)
-        check_api_response(response.json())
+        _check_api_response(response.json())
         return response.json()
 
-    def post_api_data(self, endpoint):
+    def _post_api_data(self, endpoint):
         response = requests.post(f"https://api.spotify.com/v1/{endpoint}",
                                  headers=self._headers,
                                  data=self._data)
-        check_api_response(response.json())
+        _check_api_response(response.json())
         return response.json()
 
     def get_recently_played(self):
         endpoint = 'me/player/recently-played/'
-        spotify_data = self.get_api_data(endpoint)
+        spotify_data = self._get_api_data(endpoint)
         recently_played = defaultdict(list)
         for item in spotify_data['items']:
             recently_played[item['track']['artists'][0]['name']].append(item['track']['name'])
@@ -116,35 +120,36 @@ class SpotifyClient:
         self.params['time_range'] = time_range
         self.params['limit'] = limit
         self.params['offset'] = offset
-        spotify_data = self.get_api_data(endpoint)
+        spotify_data = self._get_api_data(endpoint)
         if top_type == 'artists':
             top_data = [artist_object['name'] for artist_object in spotify_data['items']]
         else:  # 'tracks'
             # top_tracks = defaultdict(list)
             # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
-            top_data = [f"{track_object['name']} - {track_object['artists'][0]['name']}"
+            top_data = [f"{track_object['name']} - {_get_artists(track_object)}"
                         for track_object in spotify_data['items']]
         pprint(top_data)
         return spotify_data
 
     def get_current_playback(self):
-        endpoint = "me/player/"
-        spotify_data = self.get_api_data(endpoint)
+        """This only works when a song is playing..."""
+        endpoint = "me/player/currently-playing"
+        spotify_data = self._get_api_data(endpoint)
         current_track = spotify_data['item']['name']
-        current_artist = spotify_data['item']['artists'][0]['name']
+        current_artist = _get_artists(spotify_data['item'])  # spotify_data['item']['artists'][0]['name']
         print(f"Currently playing:  {current_track} by {current_artist}")
         return spotify_data
 
     def get_available_genre_seeds(self):
         endpoint = 'me/recommendations/available-genre-seeds'
-        spotify_data = self.get_api_data(endpoint)
+        spotify_data = self._get_api_data(endpoint)
         return spotify_data
 
     def get_saved_tracks(self, limit=20, offset=0):
         endpoint = 'me/tracks'
         self.params['limit'] = limit
         self.params['offset'] = offset
-        spotify_data = self.get_api_data(endpoint)
+        spotify_data = self._get_api_data(endpoint)
         pprint(spotify_data)
         top_tracks = defaultdict(list)
         for track_object in spotify_data['items']:
@@ -159,8 +164,8 @@ class SpotifyClient:
         # TODO: Get this to work for a list of ids
         endpoint = "audio-features"
         self.params['ids'] = track_ids
-        spotify_data = self.get_api_data(endpoint)
-        return filter_audio_features(spotify_data)
+        spotify_data = self._get_api_data(endpoint)
+        return _filter_audio_features(spotify_data)
 
     def get_audio_features_of_currently_playing_track(self):
         """Requires OAuth token with scope user-read-currently-playing"""
@@ -178,6 +183,13 @@ class SpotifyClient:
                    "description": description,
                    "public": True}
         self._data = json.dumps(request)
-        response = self.post_api_data(endpoint)
-        pprint(response)
+        response = self._post_api_data(endpoint)
+        print(f"Created playlist {response['name']}")
         return response
+
+    def get_track_from_id(self, id):
+        endpoint = "tracks"
+        self.params['ids'] = id
+        spotify_data = self._get_api_data(endpoint)
+        print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
+        return

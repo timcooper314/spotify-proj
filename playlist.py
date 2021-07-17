@@ -6,21 +6,21 @@ from pprint import pprint
 from spotify_api import SpotifyClient
 
 
-def get_track(playlist_item):
+def _get_track(playlist_item):
     if 'track' in playlist_item:
         return playlist_item['track']['name']
     else:
         return playlist_item['name']
 
 
-def get_artist(playlist_item):
+def _get_artist(playlist_item):
     if 'track' in playlist_item:
         return playlist_item['track']['artists'][0]['name']
     else:
         return playlist_item['artists'][0]['name']
 
 
-def get_id(playlist_item):
+def _get_id(playlist_item):
     if 'track' in playlist_item:
         return playlist_item['track']['id']
     else:
@@ -46,8 +46,8 @@ class Playlist:
     def create_playlist_df(self, spotify_data):
         self.playlist_df = pd.DataFrame(columns=['track', 'artist'])
         af = self.get_audio_features_of_tracks(spotify_data)
-        self.playlist_df['track'] = [get_track(item) for item in spotify_data['items']]
-        self.playlist_df['artist'] = [get_artist(item) for item in spotify_data['items']]
+        self.playlist_df['track'] = [_get_track(item) for item in spotify_data['items']]
+        self.playlist_df['artist'] = [_get_artist(item) for item in spotify_data['items']]
         self.playlist_df['acousticness'] = af[:, 0]  # Get these fields from desired_fields...?
         self.playlist_df['danceability'] = af[:, 1]
         self.playlist_df['energy'] = af[:, 2]
@@ -57,7 +57,7 @@ class Playlist:
 
     def get_playlists_items(self):
         endpoint = f"playlists/{self.playlist_id}/tracks"
-        spotify_data = self.spotify_client.get_api_data(endpoint)
+        spotify_data = self.spotify_client._get_api_data(endpoint)
         return spotify_data
 
     def add_tracks_to_playlist(self, track_ids):
@@ -65,21 +65,17 @@ class Playlist:
         endpoint = f"playlists/{self.playlist_id}/tracks"
         self.spotify_client._headers['Content-Type'] = 'application/json'
         self.spotify_client._data = json.dumps([f'spotify:track:{track_id}' for track_id in track_ids])
-        response = self.spotify_client.post_api_data(endpoint)
+        response = self.spotify_client._post_api_data(endpoint)
         return response
 
     def get_audio_features_of_tracks(self, playlist_data):
         """Requires OAuth token with scope user-read-top"""
         audio_features_vectors = []
         for track_object in playlist_data['items']:
-            track_id = get_id(track_object)
+            track_id = _get_id(track_object)
             track_features = self.spotify_client.get_audio_features(track_id)
             audio_features_vectors.append(list(track_features.values()))
         return np.array([vec for vec in audio_features_vectors])
-
-# TODO: Make a gui - tkinter?, pyqt5?
-
-
 
 
 if __name__ == '__main__':
@@ -90,6 +86,7 @@ if __name__ == '__main__':
     # # simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
     # pprint(simply.playlist_df.head())
 
+    # mySpotify = SpotifyClient()
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
 
