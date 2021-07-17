@@ -184,7 +184,13 @@ class SpotifyGUI(QDialog):
         else:
             top_type = 'tracks'
         print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
-        top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+        top_playlist = Playlist('')
+        top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+        top_df = top_playlist.create_playlist_df(top_data)
+        af = top_playlist.get_mean_audio_features()
+        self.af_plot.update_af_bar_plot(af)
+        self.df = top_df
+        self.update_df_widget()
 
     def create_playlist_click(self):
         if self.artists_button.isChecked():
@@ -220,11 +226,7 @@ class SpotifyGUI(QDialog):
         pl_data = pl.get_playlists_items()
         pl.create_playlist_df(pl_data)
         print(pl.playlist_df)
-        af = {'acousticness': pl.playlist_df['acousticness'].mean(),
-              'danceability': pl.playlist_df['danceability'].mean(),
-              'energy': pl.playlist_df['energy'].mean(),
-              'instrumentalness': pl.playlist_df['instrumentalness'].mean(),
-              'speechiness': pl.playlist_df['speechiness'].mean()}
+        af = pl.get_mean_audio_features()
         self.af_plot.update_af_bar_plot(af)
 
         self.df = pl.playlist_df
@@ -239,10 +241,4 @@ class SpotifyGUI(QDialog):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = SpotifyGUI()
-
-    # model = pandasModel(df)
-    # view = QTableView()
-    # view.setModel(model)
-    # view.show()
-
     sys.exit(app.exec_())

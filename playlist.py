@@ -77,6 +77,13 @@ class Playlist:
             audio_features_vectors.append(list(track_features.values()))
         return np.array([vec for vec in audio_features_vectors])
 
+    def get_mean_audio_features(self):
+        return {'acousticness': self.playlist_df['acousticness'].mean(),
+                'danceability': self.playlist_df['danceability'].mean(),
+                'energy': self.playlist_df['energy'].mean(),
+                'instrumentalness': self.playlist_df['instrumentalness'].mean(),
+                'speechiness': self.playlist_df['speechiness'].mean()}
+
 
 if __name__ == '__main__':
     # my_pid = '1uPPJSAPbKGxszadexGQJL'
