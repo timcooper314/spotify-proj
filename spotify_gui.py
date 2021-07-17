@@ -1,12 +1,13 @@
 import sys
 from pprint import pprint
+import pandas as pd
 import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout,\
-    QPushButton, QRadioButton, QLineEdit, QDialog, QTableWidget, QTableView, QTextBrowser, QButtonGroup, QWidget
-from PyQt5.QtCore import QAbstractTableModel
+    QPushButton, QRadioButton, QLineEdit, QDialog, QTableView  # , QTableWidget, QTextBrowser, QButtonGroup, QWidget
+from PyQt5.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
 from spotify_api import SpotifyClient
 from playlist import Playlist, create_playlist_of_top_tracks
 
@@ -27,19 +28,44 @@ class MPlotCanvas(FigureCanvasQTAgg):
         self.axes.patch.set_facecolor('black')
         self.draw()
 
+
+class PandasModel(QAbstractTableModel):
+    def __init__(self, data):
+        QAbstractTableModel.__init__(self)
+        self._data = data
+
+    def rowCount(self, parent=None):
+        return self._data.shape[0]
+
+    def columnCount(self, parent=None):
+        return self._data.shape[1]
+
+    def data(self, index, role=Qt.DisplayRole):
+        if index.isValid():
+            if role == Qt.DisplayRole:
+                return str(self._data.iloc[index.row(), index.column()])
+        return None
+
+    def headerData(self, col, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self._data.columns[col]
+        return None
+
+
 class SpotifyGUI(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Spotify Data...")
-        self.setGeometry(100, 100, 800, 500)  # x,y pos, width,height
+        self.setGeometry(100, 100, 1000, 800)  # x,y pos, width,height
         self.window_layout = QVBoxLayout()
         self.create_horizontal_get_top_layout()
-        # self.create_results_table()
         self.create_horizontal_get_af_layout()
+        self.create_df_layout()
 
         self.window_layout.addWidget(self.horizontal_group_box)
-        # self.window_layout.addWidget(self.results_table_box)
         self.window_layout.addWidget(self.horizontal_group_box_2)
+        self.window_layout.addWidget(self.df_group_box)
+
         self.setLayout(self.window_layout)
         self.show()
 
@@ -115,10 +141,31 @@ class SpotifyGUI(QDialog):
         # self.af_plot.axes.bar(['a','b','c','d','e'], [0, 0, 0, 0, 0])
         # self.af_plot.axes.tick_params(axis='both', which='major', labelsize=8)
         layout.addWidget(self.af_plot)
+        layout.deleteLater()
         self.horizontal_group_box_2.setLayout(layout)
 
-    # def create_results_table(self):
-    #     self.results_table_box = QTextBrowser()  # QTableWidget()
+    def create_df_layout(self):
+        self.df_group_box = QGroupBox("df grid")
+        self.df = pd.DataFrame(columns=['track', 'artist', 'acousticness', 'danceability',
+                                        'energy', 'instrumentalness', 'speechiness'])
+        self.df_model = PandasModel(self.df)
+        self.update_df_widget()
+
+    def update_df_widget(self):
+        self.df_model._data = self.df
+
+        view = QTableView()
+        view.setModel(self.df_model)
+        view.setSortingEnabled(True)
+
+        proxyModel = QSortFilterProxyModel()
+        proxyModel.setSourceModel(self.df_model)
+        view.setModel(proxyModel)
+        # view.show()
+        layout = QHBoxLayout()
+        layout.addWidget(view)
+        self.df_group_box.setLayout(layout)
+        layout.deleteLater()
 
     def get_time_period(self):
         if self.short_term_button.isChecked():
@@ -138,7 +185,6 @@ class SpotifyGUI(QDialog):
             top_type = 'tracks'
         print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
         top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
-        # self.results_table_box.append(str(top_data))
 
     def create_playlist_click(self):
         if self.artists_button.isChecked():
@@ -175,11 +221,14 @@ class SpotifyGUI(QDialog):
         pl.create_playlist_df(pl_data)
         print(pl.playlist_df)
         af = {'acousticness': pl.playlist_df['acousticness'].mean(),
-             'danceability': pl.playlist_df['danceability'].mean(),
-             'energy': pl.playlist_df['energy'].mean(),
-             'instrumentalness': pl.playlist_df['instrumentalness'].mean(),
-             'speechiness': pl.playlist_df['speechiness'].mean()}
+              'danceability': pl.playlist_df['danceability'].mean(),
+              'energy': pl.playlist_df['energy'].mean(),
+              'instrumentalness': pl.playlist_df['instrumentalness'].mean(),
+              'speechiness': pl.playlist_df['speechiness'].mean()}
         self.af_plot.update_af_bar_plot(af)
+
+        self.df = pl.playlist_df
+        self.update_df_widget()
 
     # TODO: Playlist analysis section...
     # Input playlist id/link...
@@ -190,4 +239,10 @@ class SpotifyGUI(QDialog):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = SpotifyGUI()
+
+    # model = pandasModel(df)
+    # view = QTableView()
+    # view.setModel(model)
+    # view.show()
+
     sys.exit(app.exec_())
