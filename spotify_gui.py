@@ -125,14 +125,17 @@ class SpotifyGUI(QDialog):
         self.horizontal_group_box_2 = QGroupBox("Audio features")
         layout = QHBoxLayout()
         v_layout = QVBoxLayout()
+        h_layout_1 = QHBoxLayout()
         self.link_or_id_text = QLineEdit("Track/Album/Playlist link/ID", self)
-        v_layout.addWidget(self.link_or_id_text)
-
-        h_buttons_layout = QHBoxLayout()
+        h_layout_1.addWidget(self.link_or_id_text)
 
         get_current_track_button = QPushButton("Get current playing track", self)
         get_current_track_button.clicked.connect(self.get_current_click)
-        h_buttons_layout.addWidget(get_current_track_button)
+        h_layout_1.addWidget(get_current_track_button)
+
+        v_layout.addLayout(h_layout_1)
+
+        h_buttons_layout = QHBoxLayout()
 
         get_current_af_button = QPushButton("Get track", self)
         get_current_af_button.clicked.connect(self.get_track_click)
