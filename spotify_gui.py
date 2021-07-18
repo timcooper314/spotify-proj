@@ -198,20 +198,28 @@ class SpotifyGUI(QDialog):
             self.number_tracks_text.setText("Input must be a number!")
             self.number_tracks_text.setStyleSheet("color: red;")
             return
-        except SpotifyClientAuthTokenExpiredException:
-            self.link_or_id_text.setText("Authorisation token expired!")
-            self.link_or_id_text.setStyleSheet("color: red;")
-            return
         time_period = self.get_time_period()
         if self.artists_button.isChecked():
             top_type = 'artists'
             print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
-            top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+            try:
+                top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+                self.number_tracks_text.setStyleSheet("color: green;")
+            except SpotifyClientAuthTokenExpiredException:
+                self.number_tracks_text.setText("Authorisation token expired!")
+                self.number_tracks_text.setStyleSheet("color: red;")
+                return
         else:
             top_type = 'tracks'
             top_playlist = Playlist('')
-            top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks,
-                                                           time_range=time_period)
+            try:
+                top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks,
+                                                               time_range=time_period)
+                self.number_tracks_text.setStyleSheet("color: green;")
+            except SpotifyClientAuthTokenExpiredException:
+                self.number_tracks_text.setText("Authorisation token expired!")
+                self.number_tracks_text.setStyleSheet("color: red;")
+                return
             print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
             top_df = top_playlist.create_playlist_df(top_data)
             af = top_playlist.get_mean_audio_features()
