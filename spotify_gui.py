@@ -5,11 +5,21 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGroupBox, QGridLayout,\
-    QPushButton, QRadioButton, QLineEdit, QDialog, QTableView  # , QTableWidget, QTextBrowser, QButtonGroup, QWidget
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGroupBox, \
+    QPushButton, QRadioButton, QLineEdit, QDialog, QTableView  # QGridLayout, QTableWidget, QTextBrowser, QButtonGroup, QWidget
 from PyQt5.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
 from spotify_api import SpotifyClient
 from playlist import Playlist, create_playlist_of_top_tracks
+
+
+def get_id_and_type_from_link(spotify_link_or_id):
+    if spotify_link_or_id[0:4] == 'http':  # link
+        spotify_id = (spotify_link_or_id.split('/'))[4].split('?')[0]
+        spotify_type = (spotify_link_or_id.split('/'))[3]
+    else:
+        spotify_id = spotify_link_or_id
+        spotify_type = ''
+    return spotify_id, spotify_type
 
 
 class MPlotCanvas(FigureCanvasQTAgg):
@@ -114,38 +124,30 @@ class SpotifyGUI(QDialog):
     def create_horizontal_get_af_layout(self):
         self.horizontal_group_box_2 = QGroupBox("Audio features")
         layout = QHBoxLayout()
-
         v_layout = QVBoxLayout()
-        self.track_link_text = QLineEdit("Track link/ID", self)
-        v_layout.addWidget(self.track_link_text)
+        self.link_or_id_text = QLineEdit("Track/Album/Playlist link/ID", self)
+        v_layout.addWidget(self.link_or_id_text)
 
-        self.playlist_link_text = QLineEdit("Playlist link/ID", self)
-        v_layout.addWidget(self.playlist_link_text)
-
-        self.album_link_text = QLineEdit("Album link/ID", self)
-        v_layout.addWidget(self.album_link_text)
-        layout.addLayout(v_layout)
-
-        v_layout2 = QVBoxLayout()
+        h_buttons_layout = QHBoxLayout()
 
         get_current_track_button = QPushButton("Get current playing track", self)
         get_current_track_button.clicked.connect(self.get_current_click)
-        v_layout2.addWidget(get_current_track_button)
+        h_buttons_layout.addWidget(get_current_track_button)
 
         get_current_af_button = QPushButton("Get track", self)
-        get_current_af_button.clicked.connect(self.get_af_click)
-        v_layout2.addWidget(get_current_af_button)
+        get_current_af_button.clicked.connect(self.get_track_click)
+        h_buttons_layout.addWidget(get_current_af_button)
 
         get_playlist_af_button = QPushButton("Get playlist", self)
         get_playlist_af_button.clicked.connect(self.get_playlist_click)
-        v_layout2.addWidget(get_playlist_af_button)
+        h_buttons_layout.addWidget(get_playlist_af_button)
 
         get_album_af_button = QPushButton("Get album", self)
         get_album_af_button.clicked.connect(self.get_album_click)
-        v_layout2.addWidget(get_album_af_button)
+        h_buttons_layout.addWidget(get_album_af_button)
 
-        layout.addLayout(v_layout2)
-
+        v_layout.addLayout(h_buttons_layout)
+        layout.addLayout(v_layout)
         self.af_plot = MPlotCanvas(self)
         # self.af_plot.axes.bar(['a','b','c','d','e'], [0, 0, 0, 0, 0])
         # self.af_plot.axes.tick_params(axis='both', which='major', labelsize=8)
@@ -167,10 +169,9 @@ class SpotifyGUI(QDialog):
         view.setModel(self.df_model)
         view.setSortingEnabled(True)
 
-        proxyModel = QSortFilterProxyModel()
-        proxyModel.setSourceModel(self.df_model)
-        view.setModel(proxyModel)
-        # view.show()
+        proxy_model = QSortFilterProxyModel()
+        proxy_model.setSourceModel(self.df_model)
+        view.setModel(proxy_model)
         layout = QHBoxLayout()
         layout.addWidget(view)
         self.df_group_box.setLayout(layout)
@@ -188,21 +189,20 @@ class SpotifyGUI(QDialog):
     def get_top_click(self):
         number_tracks = int(self.number_tracks_text.text())
         time_period = self.get_time_period()
-        print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
         if self.artists_button.isChecked():
             top_type = 'artists'
-            top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks,
-                                                           time_range=time_period)
+            print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
+            top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
         else:
             top_type = 'tracks'
             top_playlist = Playlist('')
             top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks,
                                                            time_range=time_period)
+            print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
             top_df = top_playlist.create_playlist_df(top_data)
             af = top_playlist.get_mean_audio_features()
-            self.af_plot.update_af_bar_plot(af)
             self.df = top_df
-            self.update_df_widget()
+            self.update_gui_data(af)
 
     def create_playlist_click(self):
         if self.artists_button.isChecked():
@@ -215,56 +215,43 @@ class SpotifyGUI(QDialog):
     def get_current_click(self):
         current_data = SpotifyClient().get_current_playback()
         current_id = current_data['item']['id']
-        self.track_link_text.setText(current_id)
+        self.link_or_id_text.setText(current_id)
 
-    def get_af_click(self):
-        track_link_or_id = self.track_link_text.text()
-        if track_link_or_id[0:4] == 'http':  # link
-            track_id = (track_link_or_id.split('/'))[4].split('?')[0]
-            SpotifyClient().get_track_from_id(track_id)
-        else:
-            track_id = track_link_or_id
-        af = SpotifyClient().get_audio_features(track_id)
-        self.af_plot.update_af_bar_plot(af)
-        pprint(af)
+    def get_track_click(self):
+        track_link_or_id = self.link_or_id_text.text()
+        track_id, _ = get_id_and_type_from_link(track_link_or_id)
+        track_playlist = Playlist('')
+        track_data = SpotifyClient().get_track_from_id(track_id)
+        track_playlist.create_playlist_df({'items': track_data})
+        af = track_playlist.get_mean_audio_features()
+        self.df = track_playlist.playlist_df
+        self.update_gui_data(af)
 
     def get_playlist_click(self):
-        playlist_link_or_id = self.playlist_link_text.text()
-        if playlist_link_or_id[0:4] == 'http':  # link
-            playlist_id = (playlist_link_or_id.split('/'))[4].split('?')[0]
-        else:
-            playlist_id = playlist_link_or_id
+        playlist_link_or_id = self.link_or_id_text.text()
+        playlist_id, _ = get_id_and_type_from_link(playlist_link_or_id)
         pl = Playlist(playlist_id)
         pl_data = pl.get_playlists_items()
         pl.create_playlist_df(pl_data)
-        print(pl.playlist_df)
         af = pl.get_mean_audio_features()
-        self.af_plot.update_af_bar_plot(af)
-
         self.df = pl.playlist_df
-        self.update_df_widget()
+        self.update_gui_data(af)
 
     def get_album_click(self):
-        album_link_or_id = self.album_link_text.text()
-        if album_link_or_id[0:4] == 'http':  # link
-            album_id = (album_link_or_id.split('/'))[4].split('?')[0]
-        else:
-            album_id = album_link_or_id
-
+        album_link_or_id = self.link_or_id_text.text()
+        album_id, _ = get_id_and_type_from_link(album_link_or_id)
         album_playlist = Playlist('')
         album_data = SpotifyClient().get_album_from_id(album_id)
-        #top_data = album_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
-        album_df = album_playlist.create_playlist_df(album_data)
+        album_playlist.create_playlist_df(album_data)
         af = album_playlist.get_mean_audio_features()
-        self.af_plot.update_af_bar_plot(af)
-        self.df = album_df
+        self.df = album_playlist.playlist_df
+        self.update_gui_data(af)
+
+    def update_gui_data(self, audio_features):
+        self.af_plot.update_af_bar_plot(audio_features)
         self.update_df_widget()
 
-
-    # TODO: Playlist analysis section...
-    # Input playlist id/link...
-    # Create playlist df, with audio features..
-    # Display as pd df, sortable by column...
+# TODO: Handle errors nicely
 
 
 if __name__ == '__main__':
