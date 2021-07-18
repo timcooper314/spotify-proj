@@ -1,3 +1,4 @@
+import json
 import sys
 from pprint import pprint
 import pandas as pd
@@ -8,7 +9,7 @@ from matplotlib.figure import Figure
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGroupBox, \
     QPushButton, QRadioButton, QLineEdit, QDialog, QTableView  # QGridLayout, QTableWidget, QTextBrowser, QButtonGroup, QWidget
 from PyQt5.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
-from spotify_api import SpotifyClient
+from spotify_api import SpotifyClient, SpotifyClientAuthTokenExpiredException
 from playlist import Playlist, create_playlist_of_top_tracks
 
 
@@ -190,17 +191,35 @@ class SpotifyGUI(QDialog):
         return time_period
 
     def get_top_click(self):
-        number_tracks = int(self.number_tracks_text.text())
+        try:
+            number_tracks = int(self.number_tracks_text.text())
+            self.number_tracks_text.setStyleSheet("color: white;")
+        except ValueError:
+            self.number_tracks_text.setText("Input must be a number!")
+            self.number_tracks_text.setStyleSheet("color: red;")
+            return
         time_period = self.get_time_period()
         if self.artists_button.isChecked():
             top_type = 'artists'
             print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
-            top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+            try:
+                top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+                self.number_tracks_text.setStyleSheet("color: green;")
+            except SpotifyClientAuthTokenExpiredException:
+                self.number_tracks_text.setText("Authorisation token expired!")
+                self.number_tracks_text.setStyleSheet("color: red;")
+                return
         else:
             top_type = 'tracks'
             top_playlist = Playlist('')
-            top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks,
-                                                           time_range=time_period)
+            try:
+                top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks,
+                                                               time_range=time_period)
+                self.number_tracks_text.setStyleSheet("color: green;")
+            except SpotifyClientAuthTokenExpiredException:
+                self.number_tracks_text.setText("Authorisation token expired!")
+                self.number_tracks_text.setStyleSheet("color: red;")
+                return
             print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
             top_df = top_playlist.create_playlist_df(top_data)
             af = top_playlist.get_mean_audio_features()
@@ -216,7 +235,17 @@ class SpotifyGUI(QDialog):
         create_playlist_of_top_tracks(time_range=time_period, limit=number_tracks)
 
     def get_current_click(self):
-        current_data = SpotifyClient().get_current_playback()
+        try:
+            current_data = SpotifyClient().get_current_playback()
+            self.link_or_id_text.setStyleSheet("color: green;")
+        except json.decoder.JSONDecodeError:
+            self.link_or_id_text.setText("No song playing?!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
+        except SpotifyClientAuthTokenExpiredException:
+            self.link_or_id_text.setText("Authorisation token expired!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
         current_id = current_data['item']['id']
         self.link_or_id_text.setText(current_id)
 
@@ -224,7 +253,17 @@ class SpotifyGUI(QDialog):
         track_link_or_id = self.link_or_id_text.text()
         track_id, _ = get_id_and_type_from_link(track_link_or_id)
         track_playlist = Playlist('')
-        track_data = SpotifyClient().get_track_from_id(track_id)
+        try:
+            track_data = SpotifyClient().get_track_from_id(track_id)
+            self.link_or_id_text.setStyleSheet("color: green;")
+        except TypeError:
+            self.link_or_id_text.setText("Failed request!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
+        except SpotifyClientAuthTokenExpiredException:
+            self.link_or_id_text.setText("Authorisation token expired!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
         track_playlist.create_playlist_df({'items': track_data})
         af = track_playlist.get_mean_audio_features()
         self.df = track_playlist.playlist_df
@@ -234,7 +273,17 @@ class SpotifyGUI(QDialog):
         playlist_link_or_id = self.link_or_id_text.text()
         playlist_id, _ = get_id_and_type_from_link(playlist_link_or_id)
         pl = Playlist(playlist_id)
-        pl_data = pl.get_playlists_items()
+        try:
+            pl_data = pl.get_playlists_items()
+            self.link_or_id_text.setStyleSheet("color: green;")
+        except TypeError:
+            self.link_or_id_text.setText("Failed request!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
+        except SpotifyClientAuthTokenExpiredException:
+            self.link_or_id_text.setText("Authorisation token expired!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
         pl.create_playlist_df(pl_data)
         af = pl.get_mean_audio_features()
         self.df = pl.playlist_df
@@ -244,7 +293,17 @@ class SpotifyGUI(QDialog):
         album_link_or_id = self.link_or_id_text.text()
         album_id, _ = get_id_and_type_from_link(album_link_or_id)
         album_playlist = Playlist('')
-        album_data = SpotifyClient().get_album_from_id(album_id)
+        try:
+            album_data = SpotifyClient().get_album_from_id(album_id)
+            self.link_or_id_text.setStyleSheet("color: green;")
+        except TypeError:
+            self.link_or_id_text.setText("Failed request!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
+        except SpotifyClientAuthTokenExpiredException:
+            self.link_or_id_text.setText("Authorisation token expired!")
+            self.link_or_id_text.setStyleSheet("color: red;")
+            return
         album_playlist.create_playlist_df(album_data)
         af = album_playlist.get_mean_audio_features()
         self.df = album_playlist.playlist_df
@@ -253,8 +312,6 @@ class SpotifyGUI(QDialog):
     def update_gui_data(self, audio_features):
         self.af_plot.update_af_bar_plot(audio_features)
         self.update_df_widget()
-
-# TODO: Handle errors nicely
 
 
 if __name__ == '__main__':
