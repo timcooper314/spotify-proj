@@ -67,7 +67,7 @@ class SpotifyGUI(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Spotify Data...")
-        self.setGeometry(100, 100, 1000, 800)  # x,y pos, width,height
+        self.setGeometry(100, 100, 800, 800)  # x,y pos, width,height
         self.window_layout = QVBoxLayout()
         self.create_horizontal_get_top_layout()
         self.create_horizontal_get_af_layout()
@@ -162,7 +162,7 @@ class SpotifyGUI(QDialog):
     def create_df_layout(self):
         self.df_group_box = QGroupBox("df grid")
         self.df = pd.DataFrame(columns=['track', 'artist', 'acousticness', 'danceability',
-                                        'energy', 'instrumentalness', 'speechiness'])
+                                        'energy', 'instrumentalness'])  # , 'speechiness'])
         self.df_model = PandasModel(self.df)
         self.update_df_widget()
 
@@ -314,7 +314,11 @@ class SpotifyGUI(QDialog):
         self.update_df_widget()
 
 
-if __name__ == '__main__':
+def main():
     app = QApplication(sys.argv)
     ex = SpotifyGUI()
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()

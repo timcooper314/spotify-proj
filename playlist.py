@@ -2,7 +2,6 @@ import json
 import numpy as np
 import pandas as pd
 from pprint import pprint
-# from track import Track
 from spotify_api import SpotifyClient
 
 
@@ -44,15 +43,14 @@ class Playlist:
         self.playlist_df = pd.DataFrame(columns=['track', 'artist'])
 
     def create_playlist_df(self, spotify_data):
-        self.playlist_df = pd.DataFrame(columns=['track', 'artist'])
         af = self.get_audio_features_of_tracks(spotify_data)
-        self.playlist_df['track'] = [_get_track(item) for item in spotify_data['items']]
-        self.playlist_df['artist'] = [_get_artist(item) for item in spotify_data['items']]
-        self.playlist_df['acousticness'] = af[:, 0]  # Get these fields from desired_fields...?
-        self.playlist_df['danceability'] = af[:, 1]
-        self.playlist_df['energy'] = af[:, 2]
-        self.playlist_df['instrumentalness'] = af[:, 3]
-        self.playlist_df['speechiness'] = af[:, 4]
+        tracks_artists = [[_get_track(item), _get_artist(item)] for item in spotify_data['items']]
+        df_af_array = np.concatenate((tracks_artists, af), axis=1)
+        af_columns = ['acousticness', 'danceability', 'energy', 'instrumentalness']
+        self.playlist_df = pd.DataFrame(df_af_array,
+                                        columns=['track', 'artist']+af_columns)  # Get these fields from desired_fields?
+        for f in af_columns:
+            self.playlist_df[f] = pd.to_numeric(self.playlist_df[f], downcast="float")
         return self.playlist_df
 
     def get_playlists_items(self):
@@ -81,18 +79,20 @@ class Playlist:
         return {'acousticness': self.playlist_df['acousticness'].mean(),
                 'danceability': self.playlist_df['danceability'].mean(),
                 'energy': self.playlist_df['energy'].mean(),
-                'instrumentalness': self.playlist_df['instrumentalness'].mean(),
-                'speechiness': self.playlist_df['speechiness'].mean()}
+                'instrumentalness': self.playlist_df['instrumentalness'].mean()}
+                # 'speechiness': self.playlist_df['speechiness'].mean()}
 
 
-if __name__ == '__main__':
-    # my_pid = '1uPPJSAPbKGxszadexGQJL'
-    # simply = Playlist(my_pid)
-    # simply_data = simply.get_playlists_items()
-    # simply.create_playlist_df(simply_data)
-    # # simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
-    # pprint(simply.playlist_df.head())
-
+def main():
+    my_pid = '1uPPJSAPbKGxszadexGQJL'
+    simply = Playlist(my_pid)
+    simply_data = simply.get_playlists_items()
+    simply.create_playlist_df(simply_data)
+    # simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
+    pprint(simply.playlist_df.head())
+    print(simply.playlist_df['energy'].dtype)
+    print(simply.playlist_df['energy'].dtype)
+    pass
     # mySpotify = SpotifyClient()
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     # top_df = top_playlist.create_playlist_df(top_data)
     # print(top_df.head())
 
-    create_playlist_of_top_tracks('short_term', 10)
+    # create_playlist_of_top_tracks('short_term', 10)
 
     # mySpotify.get_audio_features_of_currently_playing_track()
 
@@ -112,6 +112,9 @@ if __name__ == '__main__':
     # compute_similarity_matrix(audio_array)
     # mySpotify.create_top_tracks_df()
 
+
+if __name__ == '__main__':
+    main()
     # idea: use cosine similarity on artist genres to find similar artists
         # Make playlist based on two or more peoples common genre interests
         # Make playlist of a genre from music in library

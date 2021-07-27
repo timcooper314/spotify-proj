@@ -1,7 +1,6 @@
 import requests
 import json
 import numpy as np
-import pandas as pd
 from pprint import pprint
 from collections import defaultdict
 
@@ -23,8 +22,8 @@ def _check_api_response(response):
 
 
 def _filter_audio_features(spotify_data):
-    desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness']
-    additional_fields = ['liveness', 'tempo', 'key', 'loudness', 'mode', 'time_signature', 'valence']
+    desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness']  # , 'speechiness']
+    # additional_fields = ['liveness', 'tempo', 'key', 'loudness', 'mode', 'time_signature', 'valence']
     return {field: spotify_data['audio_features'][0][field] for field in desired_fields}
 
 
@@ -38,7 +37,6 @@ def compute_similarity_matrix(audio_features_array):
      between tracks, given an array of audio features vectors."""
     num_tracks = len(audio_features_array)
     similarity_matrix = np.eye(num_tracks)
-    # for i, vec in enumerate(audio_features_array):
     for i in range(num_tracks):
         v_i = audio_features_array[i]
         for j in range(i+1, num_tracks):
@@ -60,7 +58,6 @@ class SpotifyClient:
         self._params = {}
         self._headers = {'Authorization': f"Bearer {self.AUTH_TOKEN}"}
         self._data = {}
-        self.track_audio_features_df = pd.DataFrame(columns=['track', 'artist', 'id', 'acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness'])
 
     @property
     def params(self):
@@ -200,5 +197,5 @@ class SpotifyClient:
         spotify_data = self._get_api_data(endpoint)
         album_tracks = [track_obj['name'] for track_obj in spotify_data['albums'][0]['tracks']['items']]
         pprint(album_tracks)
-        #print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
+        # print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
         return spotify_data['albums'][0]['tracks']
