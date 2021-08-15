@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 import numpy as np
 import pandas as pd
 from pprint import pprint
@@ -28,7 +29,7 @@ def _get_id(playlist_item):
 
 def create_playlist_of_top_tracks(time_range="short_term", limit=20):
     response = SpotifyClient().create_playlist(
-        f"{limit}_{time_range}",
+        f"{limit}_{time_range}_{datetime.now().strftime('%b-%y')}",
         f"{limit} ripper tracks from the {time_range} based on number of plays.",
     )
     my_playlist = Playlist(response["id"])
