@@ -1,7 +1,6 @@
 import requests
 import json
 import numpy as np
-import pandas as pd
 from pprint import pprint
 from collections import defaultdict
 
@@ -11,37 +10,41 @@ class SpotifyClientAuthTokenExpiredException(Exception):
 
 
 def _get_auth_token():
-    with open('auth_token.txt') as f:
+    with open("auth_token.txt") as f:
         token = f.readlines()
         f.close()
     return token[0]
 
 
 def _check_api_response(response):
-    if 'error' in response:
-        raise SpotifyClientAuthTokenExpiredException(response['error']['message'])
+    if "error" in response:
+        raise SpotifyClientAuthTokenExpiredException(response["error"]["message"])
 
 
 def _filter_audio_features(spotify_data):
-    desired_fields = ['acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness']
-    additional_fields = ['liveness', 'tempo', 'key', 'loudness', 'mode', 'time_signature', 'valence']
-    return {field: spotify_data['audio_features'][0][field] for field in desired_fields}
+    desired_fields = [
+        "acousticness",
+        "danceability",
+        "energy",
+        "instrumentalness",
+    ]  # , 'speechiness']
+    # additional_fields = ['liveness', 'tempo', 'key', 'loudness', 'mode', 'time_signature', 'valence']
+    return {field: spotify_data["audio_features"][0][field] for field in desired_fields}
 
 
 def compute_cosine(v_1, v_2):
     """Computes the cosine of the angle between vectors v_1 and v_2"""
-    return np.dot(v_1, v_2) / (np.linalg.norm(v_1)*np.linalg.norm(v_2))
+    return np.dot(v_1, v_2) / (np.linalg.norm(v_1) * np.linalg.norm(v_2))
 
 
 def compute_similarity_matrix(audio_features_array):
     """Computes the (symmetric, square) matrix of similarity values
-     between tracks, given an array of audio features vectors."""
+    between tracks, given an array of audio features vectors."""
     num_tracks = len(audio_features_array)
     similarity_matrix = np.eye(num_tracks)
-    # for i, vec in enumerate(audio_features_array):
     for i in range(num_tracks):
         v_i = audio_features_array[i]
-        for j in range(i+1, num_tracks):
+        for j in range(i + 1, num_tracks):
             v_j = audio_features_array[j]
             similarity_matrix[i][j] = compute_cosine(v_i, v_j)
     print(similarity_matrix)
@@ -49,18 +52,17 @@ def compute_similarity_matrix(audio_features_array):
 
 
 def _get_artists(track_obj):
-    return ', '.join([artist['name'] for artist in track_obj['artists']])
+    return ", ".join([artist["name"] for artist in track_obj["artists"]])
 
 
 class SpotifyClient:
     def __init__(self):
         self.AUTH_TOKEN = _get_auth_token()
-        self.base_url = 'https://api.spotify.com/'
-        self.user = '1259570943'
+        self.base_url = "https://api.spotify.com/"
+        self.user = "1259570943"
         self._params = {}
-        self._headers = {'Authorization': f"Bearer {self.AUTH_TOKEN}"}
+        self._headers = {"Authorization": f"Bearer {self.AUTH_TOKEN}"}
         self._data = {}
-        self.track_audio_features_df = pd.DataFrame(columns=['track', 'artist', 'id', 'acousticness', 'danceability', 'energy', 'instrumentalness', 'speechiness'])
 
     @property
     def params(self):
@@ -87,47 +89,57 @@ class SpotifyClient:
         self._data = body
 
     def _get_api_data(self, endpoint):
-        response = requests.get(f"https://api.spotify.com/v1/{endpoint}",
-                                headers=self._headers,
-                                params=self._params)
+        response = requests.get(
+            f"https://api.spotify.com/v1/{endpoint}",
+            headers=self._headers,
+            params=self._params,
+        )
         _check_api_response(response.json())
         return response.json()
 
     def _post_api_data(self, endpoint):
-        response = requests.post(f"https://api.spotify.com/v1/{endpoint}",
-                                 headers=self._headers,
-                                 data=self._data)
+        response = requests.post(
+            f"https://api.spotify.com/v1/{endpoint}",
+            headers=self._headers,
+            data=self._data,
+        )
         _check_api_response(response.json())
         return response.json()
 
     def get_recently_played(self):
-        endpoint = 'me/player/recently-played/'
+        endpoint = "me/player/recently-played/"
         spotify_data = self._get_api_data(endpoint)
         recently_played = defaultdict(list)
-        for item in spotify_data['items']:
-            recently_played[item['track']['artists'][0]['name']].append(item['track']['name'])
+        for item in spotify_data["items"]:
+            recently_played[item["track"]["artists"][0]["name"]].append(
+                item["track"]["name"]
+            )
         pprint(recently_played)
         return recently_played
 
-    def get_top(self, top_type='tracks', time_range='medium_term', offset=0, limit=10):
+    def get_top(self, top_type="tracks", time_range="medium_term", offset=0, limit=10):
         """Retrieves your most played.
-            top_type: artists, tracks
-            time_range: short_term, medium_term, long_term;
-            0<=offset<50: a shift down the list;
-            0<=limit<=50: number of results to retrieve"""
+        top_type: artists, tracks
+        time_range: short_term, medium_term, long_term;
+        0<=offset<50: a shift down the list;
+        0<=limit<=50: number of results to retrieve"""
         # TODO: Make this method work for limit>50 (i.e. by using offset>0)
         endpoint = f"me/top/{top_type}"
-        self.params['time_range'] = time_range
-        self.params['limit'] = limit
-        self.params['offset'] = offset
+        self.params["time_range"] = time_range
+        self.params["limit"] = limit
+        self.params["offset"] = offset
         spotify_data = self._get_api_data(endpoint)
-        if top_type == 'artists':
-            top_data = [artist_object['name'] for artist_object in spotify_data['items']]
+        if top_type == "artists":
+            top_data = [
+                artist_object["name"] for artist_object in spotify_data["items"]
+            ]
         else:  # 'tracks'
             # top_tracks = defaultdict(list)
             # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
-            top_data = [f"{track_object['name']} - {_get_artists(track_object)}"
-                        for track_object in spotify_data['items']]
+            top_data = [
+                f"{track_object['name']} - {_get_artists(track_object)}"
+                for track_object in spotify_data["items"]
+            ]
         pprint(top_data)
         return spotify_data
 
@@ -135,26 +147,28 @@ class SpotifyClient:
         """This only works when a song is playing..."""
         endpoint = "me/player/currently-playing"
         spotify_data = self._get_api_data(endpoint)
-        current_track = spotify_data['item']['name']
-        current_artist = _get_artists(spotify_data['item'])  # spotify_data['item']['artists'][0]['name']
+        current_track = spotify_data["item"]["name"]
+        current_artist = _get_artists(
+            spotify_data["item"]
+        )  # spotify_data['item']['artists'][0]['name']
         print(f"Currently playing:  {current_track} by {current_artist}")
         return spotify_data
 
     def get_available_genre_seeds(self):
-        endpoint = 'me/recommendations/available-genre-seeds'
+        endpoint = "me/recommendations/available-genre-seeds"
         spotify_data = self._get_api_data(endpoint)
         return spotify_data
 
     def get_saved_tracks(self, limit=20, offset=0):
-        endpoint = 'me/tracks'
-        self.params['limit'] = limit
-        self.params['offset'] = offset
+        endpoint = "me/tracks"
+        self.params["limit"] = limit
+        self.params["offset"] = offset
         spotify_data = self._get_api_data(endpoint)
         pprint(spotify_data)
         top_tracks = defaultdict(list)
-        for track_object in spotify_data['items']:
-            artist = track_object['track']['artists'][0]['name']
-            track = track_object['track']['name']
+        for track_object in spotify_data["items"]:
+            artist = track_object["track"]["artists"][0]["name"]
+            track = track_object["track"]["name"]
             top_tracks[artist].append(track)
         print(len(top_tracks))
         pprint(top_tracks)
@@ -163,14 +177,14 @@ class SpotifyClient:
     def get_audio_features(self, track_ids):
         # TODO: Get this to work for a list of ids
         endpoint = "audio-features"
-        self.params['ids'] = track_ids
+        self.params["ids"] = track_ids
         spotify_data = self._get_api_data(endpoint)
         return _filter_audio_features(spotify_data)
 
     def get_audio_features_of_currently_playing_track(self):
         """Requires OAuth token with scope user-read-currently-playing"""
         current_playing_data = self.get_current_playback()
-        track_id = current_playing_data['item']['id']
+        track_id = current_playing_data["item"]["id"]
         features = self.get_audio_features(track_id)
         pprint(features)
         return features
@@ -178,10 +192,8 @@ class SpotifyClient:
     def create_playlist(self, name, description):
         """Creates a playlist. Requires scope playlist-modify-public."""
         endpoint = f"users/{self.user}/playlists"
-        self._headers['Content-Type'] = 'application/json'
-        request = {"name": name,
-                   "description": description,
-                   "public": True}
+        self._headers["Content-Type"] = "application/json"
+        request = {"name": name, "description": description, "public": True}
         self._data = json.dumps(request)
         response = self._post_api_data(endpoint)
         print(f"Created playlist {response['name']}")
@@ -189,16 +201,21 @@ class SpotifyClient:
 
     def get_track_from_id(self, id):
         endpoint = "tracks"
-        self.params['ids'] = id
+        self.params["ids"] = id
         spotify_data = self._get_api_data(endpoint)
-        print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
-        return spotify_data['tracks']
+        print(
+            f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}"
+        )
+        return spotify_data["tracks"]
 
     def get_album_from_id(self, id):
         endpoint = "albums"
-        self.params['ids'] = id
+        self.params["ids"] = id
         spotify_data = self._get_api_data(endpoint)
-        album_tracks = [track_obj['name'] for track_obj in spotify_data['albums'][0]['tracks']['items']]
+        album_tracks = [
+            track_obj["name"]
+            for track_obj in spotify_data["albums"][0]["tracks"]["items"]
+        ]
         pprint(album_tracks)
-        #print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
-        return spotify_data['albums'][0]['tracks']
+        # print(f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}")
+        return spotify_data["albums"][0]["tracks"]

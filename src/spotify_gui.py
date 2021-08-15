@@ -3,40 +3,56 @@ import sys
 from pprint import pprint
 import pandas as pd
 import matplotlib
-matplotlib.use('Qt5Agg')
+
+matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QGroupBox, \
-    QPushButton, QRadioButton, QLineEdit, QDialog, QTableView  # QGridLayout, QTableWidget, QTextBrowser, QButtonGroup, QWidget
+from PyQt5.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QVBoxLayout,
+    QGroupBox,
+    QPushButton,
+    QRadioButton,
+    QLineEdit,
+    QDialog,
+    QTableView,
+)  # QButtonGroup
 from PyQt5.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
 from spotify_api import SpotifyClient, SpotifyClientAuthTokenExpiredException
 from playlist import Playlist, create_playlist_of_top_tracks
 
 
 def get_id_and_type_from_link(spotify_link_or_id):
-    if spotify_link_or_id[0:4] == 'http':  # link
-        spotify_id = (spotify_link_or_id.split('/'))[4].split('?')[0]
-        spotify_type = (spotify_link_or_id.split('/'))[3]
+    if spotify_link_or_id[0:4] == "http":  # link
+        spotify_id = (spotify_link_or_id.split("/"))[4].split("?")[0]
+        spotify_type = (spotify_link_or_id.split("/"))[3]
     else:
         spotify_id = spotify_link_or_id
-        spotify_type = ''
+        spotify_type = ""
     return spotify_id, spotify_type
 
 
 class MPlotCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None):
         fig = Figure(figsize=(2.5, 2.5), dpi=100)
-        fig.set_facecolor('black')
+        fig.set_facecolor("black")
         fig.set_alpha(1)
         self.axes = fig.add_axes([0.2, 0.2, 0.75, 0.75])
-        self.axes.patch.set_facecolor('black')
+        self.axes.patch.set_facecolor("black")
         super(MPlotCanvas, self).__init__(fig)
 
     def update_af_bar_plot(self, af):
         self.axes.cla()
-        self.axes.bar(af.keys(), af.values(), color='g')
-        self.axes.tick_params(axis='both', which='major', labelsize=8, labelrotation=10, labelcolor='white')
-        self.axes.patch.set_facecolor('black')
+        self.axes.bar(af.keys(), af.values(), color="g")
+        self.axes.tick_params(
+            axis="both",
+            which="major",
+            labelsize=8,
+            labelrotation=10,
+            labelcolor="white",
+        )
+        self.axes.patch.set_facecolor("black")
         self.draw()
 
 
@@ -67,7 +83,7 @@ class SpotifyGUI(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Spotify Data...")
-        self.setGeometry(100, 100, 1000, 800)  # x,y pos, width,height
+        self.setGeometry(100, 100, 800, 800)  # x,y pos, width,height
         self.window_layout = QVBoxLayout()
         self.create_horizontal_get_top_layout()
         self.create_horizontal_get_af_layout()
@@ -161,8 +177,16 @@ class SpotifyGUI(QDialog):
 
     def create_df_layout(self):
         self.df_group_box = QGroupBox("df grid")
-        self.df = pd.DataFrame(columns=['track', 'artist', 'acousticness', 'danceability',
-                                        'energy', 'instrumentalness', 'speechiness'])
+        self.df = pd.DataFrame(
+            columns=[
+                "track",
+                "artist",
+                "acousticness",
+                "danceability",
+                "energy",
+                "instrumentalness",
+            ]
+        )  # , 'speechiness'])
         self.df_model = PandasModel(self.df)
         self.update_df_widget()
 
@@ -183,11 +207,11 @@ class SpotifyGUI(QDialog):
 
     def get_time_period(self):
         if self.short_term_button.isChecked():
-            time_period = 'short_term'
+            time_period = "short_term"
         elif self.medium_term_button.isChecked():
-            time_period = 'medium_term'
+            time_period = "medium_term"
         else:
-            time_period = 'long_term'
+            time_period = "long_term"
         return time_period
 
     def get_top_click(self):
@@ -200,21 +224,24 @@ class SpotifyGUI(QDialog):
             return
         time_period = self.get_time_period()
         if self.artists_button.isChecked():
-            top_type = 'artists'
+            top_type = "artists"
             print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
             try:
-                top_data = SpotifyClient().get_top(top_type=top_type, limit=number_tracks, time_range=time_period)
+                top_data = SpotifyClient().get_top(
+                    top_type=top_type, limit=number_tracks, time_range=time_period
+                )
                 self.number_tracks_text.setStyleSheet("color: green;")
             except SpotifyClientAuthTokenExpiredException:
                 self.number_tracks_text.setText("Authorisation token expired!")
                 self.number_tracks_text.setStyleSheet("color: red;")
                 return
         else:
-            top_type = 'tracks'
-            top_playlist = Playlist('')
+            top_type = "tracks"
+            top_playlist = Playlist("")
             try:
-                top_data = top_playlist.spotify_client.get_top(top_type=top_type, limit=number_tracks,
-                                                               time_range=time_period)
+                top_data = top_playlist.spotify_client.get_top(
+                    top_type=top_type, limit=number_tracks, time_range=time_period
+                )
                 self.number_tracks_text.setStyleSheet("color: green;")
             except SpotifyClientAuthTokenExpiredException:
                 self.number_tracks_text.setText("Authorisation token expired!")
@@ -246,13 +273,13 @@ class SpotifyGUI(QDialog):
             self.link_or_id_text.setText("Authorisation token expired!")
             self.link_or_id_text.setStyleSheet("color: red;")
             return
-        current_id = current_data['item']['id']
+        current_id = current_data["item"]["id"]
         self.link_or_id_text.setText(current_id)
 
     def get_track_click(self):
         track_link_or_id = self.link_or_id_text.text()
         track_id, _ = get_id_and_type_from_link(track_link_or_id)
-        track_playlist = Playlist('')
+        track_playlist = Playlist("")
         try:
             track_data = SpotifyClient().get_track_from_id(track_id)
             self.link_or_id_text.setStyleSheet("color: green;")
@@ -264,7 +291,7 @@ class SpotifyGUI(QDialog):
             self.link_or_id_text.setText("Authorisation token expired!")
             self.link_or_id_text.setStyleSheet("color: red;")
             return
-        track_playlist.create_playlist_df({'items': track_data})
+        track_playlist.create_playlist_df({"items": track_data})
         af = track_playlist.get_mean_audio_features()
         self.df = track_playlist.playlist_df
         self.update_gui_data(af)
@@ -292,7 +319,7 @@ class SpotifyGUI(QDialog):
     def get_album_click(self):
         album_link_or_id = self.link_or_id_text.text()
         album_id, _ = get_id_and_type_from_link(album_link_or_id)
-        album_playlist = Playlist('')
+        album_playlist = Playlist("")
         try:
             album_data = SpotifyClient().get_album_from_id(album_id)
             self.link_or_id_text.setStyleSheet("color: green;")
@@ -314,7 +341,11 @@ class SpotifyGUI(QDialog):
         self.update_df_widget()
 
 
-if __name__ == '__main__':
+def main():
     app = QApplication(sys.argv)
     ex = SpotifyGUI()
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
