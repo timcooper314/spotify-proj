@@ -216,7 +216,7 @@ class SpotifyGUI(QDialog):
 
     def get_top_click(self):
         try:
-            number_tracks = int(self.number_tracks_text.text())
+            number_tracks = min(int(self.number_tracks_text.text()), 99)
             self.number_tracks_text.setStyleSheet("color: white;")
         except ValueError:
             self.number_tracks_text.setText("Input must be a number!")
@@ -259,7 +259,7 @@ class SpotifyGUI(QDialog):
             return
         number_tracks = int(self.number_tracks_text.text())
         time_period = self.get_time_period()
-        create_playlist_of_top_tracks(time_range=time_period, limit=number_tracks)
+        create_playlist_of_top_tracks(time_range=time_period, limit=min(number_tracks, 99))
 
     def get_current_click(self):
         try:
