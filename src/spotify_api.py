@@ -117,13 +117,27 @@ class SpotifyClient:
         pprint(recently_played)
         return recently_played
 
-    def get_top(self, top_type="tracks", time_range="medium_term", offset=0, limit=10):
+    def get_top(self, top_type="tracks", time_range="medium_term", limit=10):
+        """Retrieves your most played.
+        top_type: artists, tracks
+        time_range: short_term, medium_term, long_term;
+        0<=limit<100: number of results to retrieve"""
+        if limit <= 50:
+            top_list = self._get_top_limited_list(top_type, time_range, 0, limit)
+        else:
+            top_list = self._get_top_limited_list(top_type, time_range, 0, 50)
+            more_list = self._get_top_limited_list(
+                top_type, time_range, 49, limit - 49
+            )[1:]
+            top_list.extend(more_list)
+        return top_list
+
+    def _get_top_limited_list(self, top_type, time_range, offset, limit):
         """Retrieves your most played.
         top_type: artists, tracks
         time_range: short_term, medium_term, long_term;
         0<=offset<50: a shift down the list;
         0<=limit<=50: number of results to retrieve"""
-        # TODO: Make this method work for limit>50 (i.e. by using offset>0)
         endpoint = f"me/top/{top_type}"
         self.params["time_range"] = time_range
         self.params["limit"] = limit
@@ -134,14 +148,12 @@ class SpotifyClient:
                 artist_object["name"] for artist_object in spotify_data["items"]
             ]
         else:  # 'tracks'
-            # top_tracks = defaultdict(list)
-            # top_tracks[track_object['artists'][0]['name']].append(track_object['name'])
             top_data = [
                 f"{track_object['name']} - {_get_artists(track_object)}"
                 for track_object in spotify_data["items"]
             ]
         pprint(top_data)
-        return spotify_data
+        return spotify_data["items"]
 
     def get_current_playback(self):
         """This only works when a song is playing..."""

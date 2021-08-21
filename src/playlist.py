@@ -33,8 +33,8 @@ def create_playlist_of_top_tracks(time_range="short_term", limit=20):
         f"{limit} ripper tracks from the {time_range} based on number of plays.",
     )
     my_playlist = Playlist(response["id"])
-    top_tracks_data = SpotifyClient().get_top("tracks", time_range, 0, limit)
-    track_ids = [track_data["id"] for track_data in top_tracks_data["items"]]
+    top_tracks_items = SpotifyClient().get_top("tracks", time_range, limit)
+    track_ids = [track_data["id"] for track_data in top_tracks_items]
     response = my_playlist.add_tracks_to_playlist(track_ids)
     return response
 
@@ -45,10 +45,10 @@ class Playlist:
         self.playlist_id = playlist_id
         self.playlist_df = pd.DataFrame(columns=["track", "artist"])
 
-    def create_playlist_df(self, spotify_data):
-        af = self.get_audio_features_of_tracks(spotify_data)
+    def create_playlist_df(self, spotify_items):
+        af = self.get_audio_features_of_tracks(spotify_items)
         tracks_artists = [
-            [_get_track(item), _get_artist(item)] for item in spotify_data["items"]
+            [_get_track(item), _get_artist(item)] for item in spotify_items
         ]
         df_af_array = np.concatenate((tracks_artists, af), axis=1)
         af_columns = ["acousticness", "danceability", "energy", "instrumentalness"]
@@ -74,10 +74,10 @@ class Playlist:
         response = self.spotify_client._post_api_data(endpoint)
         return response
 
-    def get_audio_features_of_tracks(self, playlist_data):
+    def get_audio_features_of_tracks(self, playlist_items):
         """Requires OAuth token with scope user-read-top"""
         audio_features_vectors = []
-        for track_object in playlist_data["items"]:
+        for track_object in playlist_items:
             track_id = _get_id(track_object)
             track_features = self.spotify_client.get_audio_features(track_id)
             audio_features_vectors.append(list(track_features.values()))

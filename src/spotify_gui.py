@@ -216,7 +216,7 @@ class SpotifyGUI(QDialog):
 
     def get_top_click(self):
         try:
-            number_tracks = int(self.number_tracks_text.text())
+            number_tracks = min(int(self.number_tracks_text.text()), 99)
             self.number_tracks_text.setStyleSheet("color: white;")
         except ValueError:
             self.number_tracks_text.setText("Input must be a number!")
@@ -227,8 +227,8 @@ class SpotifyGUI(QDialog):
             top_type = "artists"
             print(f"{number_tracks} {time_period.replace('_', ' ')} top {top_type}:")
             try:
-                top_data = SpotifyClient().get_top(
-                    top_type=top_type, limit=number_tracks, time_range=time_period
+                SpotifyClient().get_top(
+                    top_type=top_type, time_range=time_period, limit=number_tracks
                 )
                 self.number_tracks_text.setStyleSheet("color: green;")
             except SpotifyClientAuthTokenExpiredException:
@@ -240,7 +240,7 @@ class SpotifyGUI(QDialog):
             top_playlist = Playlist("")
             try:
                 top_data = top_playlist.spotify_client.get_top(
-                    top_type=top_type, limit=number_tracks, time_range=time_period
+                    top_type=top_type, time_range=time_period, limit=number_tracks
                 )
                 self.number_tracks_text.setStyleSheet("color: green;")
             except SpotifyClientAuthTokenExpiredException:
@@ -259,7 +259,7 @@ class SpotifyGUI(QDialog):
             return
         number_tracks = int(self.number_tracks_text.text())
         time_period = self.get_time_period()
-        create_playlist_of_top_tracks(time_range=time_period, limit=number_tracks)
+        create_playlist_of_top_tracks(time_range=time_period, limit=min(number_tracks, 99))
 
     def get_current_click(self):
         try:
