@@ -1,8 +1,10 @@
 import json
 from datetime import datetime
+from pprint import pprint
+from typing import List, Dict
 import numpy as np
 import pandas as pd
-from pprint import pprint
+
 from spotify_api import SpotifyClient
 
 
@@ -45,10 +47,10 @@ class Playlist:
         self.playlist_id = playlist_id
         self.playlist_df = pd.DataFrame(columns=["track", "artist"])
 
-    def create_playlist_df(self, spotify_items):
+    def create_playlist_df(self, spotify_items: List[Dict]):
         af = self.get_audio_features_of_tracks(spotify_items)
         tracks_artists = [
-            [_get_track(item), _get_artist(item)] for item in spotify_items['items']
+            [_get_track(item), _get_artist(item)] for item in spotify_items
         ]
         df_af_array = np.concatenate((tracks_artists, af), axis=1)
         af_columns = ["acousticness", "danceability", "energy", "instrumentalness"]
@@ -74,10 +76,10 @@ class Playlist:
         response = self.spotify_client._post_api_data(endpoint)
         return response
 
-    def get_audio_features_of_tracks(self, playlist_items):
+    def get_audio_features_of_tracks(self, playlist_items: List[Dict]):
         """Requires OAuth token with scope user-read-top"""
         audio_features_vectors = []
-        for track_object in playlist_items['items']:
+        for track_object in playlist_items:
             track_id = _get_id(track_object)
             track_features = self.spotify_client.get_audio_features(track_id)
             audio_features_vectors.append(list(track_features.values()))

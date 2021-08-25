@@ -291,7 +291,7 @@ class SpotifyGUI(QDialog):
             self.link_or_id_text.setText("Authorisation token expired!")
             self.link_or_id_text.setStyleSheet("color: red;")
             return
-        track_playlist.create_playlist_df({"items": track_data})
+        track_playlist.create_playlist_df(track_data)
         af = track_playlist.get_mean_audio_features()
         self.df = track_playlist.playlist_df
         self.update_gui_data(af)
