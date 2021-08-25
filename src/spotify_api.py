@@ -118,7 +118,9 @@ class SpotifyClient:
         pprint(recently_played)
         return recently_played
 
-    def get_top(self, top_type="tracks", time_range="medium_term", limit=10) -> List[str]:
+    def get_top(
+        self, top_type="tracks", time_range="medium_term", limit=10
+    ) -> List[str]:
         """Retrieves your most played
         top_type: artists, tracks
         time_range: short_term, medium_term, long_term;

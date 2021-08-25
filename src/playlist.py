@@ -61,10 +61,10 @@ class Playlist:
             self.playlist_df[f] = pd.to_numeric(self.playlist_df[f], downcast="float")
         return self.playlist_df
 
-    def get_playlists_items(self):
+    def get_playlists_items(self) -> List[Dict]:
         endpoint = f"playlists/{self.playlist_id}/tracks"
         spotify_data = self.spotify_client._get_api_data(endpoint)
-        return spotify_data
+        return spotify_data["items"]
 
     def add_tracks_to_playlist(self, track_ids):
         """Adds tracks defined by track_ids (list) to playlist defined by playlist_id."""
