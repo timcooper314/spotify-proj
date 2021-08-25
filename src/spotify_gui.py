@@ -259,7 +259,9 @@ class SpotifyGUI(QDialog):
             return
         number_tracks = int(self.number_tracks_text.text())
         time_period = self.get_time_period()
-        create_playlist_of_top_tracks(time_range=time_period, limit=min(number_tracks, 99))
+        create_playlist_of_top_tracks(
+            time_range=time_period, limit=min(number_tracks, 99)
+        )
 
     def get_current_click(self):
         try:
@@ -331,7 +333,7 @@ class SpotifyGUI(QDialog):
             self.link_or_id_text.setText("Authorisation token expired!")
             self.link_or_id_text.setStyleSheet("color: red;")
             return
-        album_playlist.create_playlist_df(album_data)
+        album_playlist.create_playlist_df(album_data["items"])
         af = album_playlist.get_mean_audio_features()
         self.df = album_playlist.playlist_df
         self.update_gui_data(af)
