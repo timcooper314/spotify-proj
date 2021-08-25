@@ -48,7 +48,7 @@ class Playlist:
     def create_playlist_df(self, spotify_items):
         af = self.get_audio_features_of_tracks(spotify_items)
         tracks_artists = [
-            [_get_track(item), _get_artist(item)] for item in spotify_items
+            [_get_track(item), _get_artist(item)] for item in spotify_items['items']
         ]
         df_af_array = np.concatenate((tracks_artists, af), axis=1)
         af_columns = ["acousticness", "danceability", "energy", "instrumentalness"]
@@ -77,7 +77,7 @@ class Playlist:
     def get_audio_features_of_tracks(self, playlist_items):
         """Requires OAuth token with scope user-read-top"""
         audio_features_vectors = []
-        for track_object in playlist_items:
+        for track_object in playlist_items['items']:
             track_id = _get_id(track_object)
             track_features = self.spotify_client.get_audio_features(track_id)
             audio_features_vectors.append(list(track_features.values()))
@@ -101,8 +101,6 @@ def main():
     # simply.add_tracks_to_playlist(['1c6usMjMA3cMG1tNM67g2C'])
     pprint(simply.playlist_df.head())
     print(simply.playlist_df["energy"].dtype)
-    print(simply.playlist_df["energy"].dtype)
-    pass
     # mySpotify = SpotifyClient()
     # mySpotify.get_current_playback()
     # mySpotify.get_recently_played()

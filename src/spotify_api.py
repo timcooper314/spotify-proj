@@ -211,18 +211,18 @@ class SpotifyClient:
         print(f"Created playlist {response['name']}")
         return response
 
-    def get_track_from_id(self, id):
+    def get_track_from_id(self, id_):
         endpoint = "tracks"
-        self.params["ids"] = id
+        self.params["ids"] = id_
         spotify_data = self._get_api_data(endpoint)
         print(
             f"{_get_artists(spotify_data['tracks'][0]['album'])} - {spotify_data['tracks'][0]['name']}"
         )
         return spotify_data["tracks"]
 
-    def get_album_from_id(self, id):
+    def get_album_from_id(self, id_):
         endpoint = "albums"
-        self.params["ids"] = id
+        self.params["ids"] = id_
         spotify_data = self._get_api_data(endpoint)
         album_tracks = [
             track_obj["name"]
